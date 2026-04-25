@@ -33,6 +33,3 @@ cask "ghostty"
 
 # GUI editors
 cask "zed"
-
-# Docker daemon (alternative to Docker Desktop — faster, lighter on Mac)
-cask "orbstack"
