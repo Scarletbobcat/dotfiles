@@ -2,3 +2,9 @@
 scripts/**
 README.md
 LICENSE
+
+# On Linux, omarchy maintains lua/plugins/theme.lua as a symlink to the
+# currently-active theme so it hot-swaps on theme change. Don't overwrite.
+{{- if eq .chezmoi.os "linux" }}
+.config/nvim/lua/plugins/theme.lua
+{{- end }}
