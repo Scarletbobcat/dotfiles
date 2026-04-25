@@ -1,0 +1,762 @@
+# chezmoi:template:left-delimiter="<%" right-delimiter="%>"
+# NTM (Named Tmux Manager) Configuration
+# https://github.com/Dicklesworthstone/ntm
+#
+# NOTE: chezmoi delimiters are swapped to [[ ]] for this file because
+# NTM's [agents] section uses {{...}} for its own command templates.
+
+# Base directory for projects (templated for cross-platform $HOME)
+projects_base = "<% .chezmoi.homeDir %>/github"
+
+# UI Theme (mocha, macchiato, nord, latte, auto)
+# theme = "auto"
+
+# Help verbosity (minimal, full)
+# help_verbosity = "full"
+
+# Show contextual CLI suggestions
+suggestions_enabled = true
+
+# Path to command palette markdown file (optional)
+# If set, loads palette commands from this file instead of [[palette]] entries below
+# Searched automatically: ~/.config/ntm/command_palette.md, ./command_palette.md
+# palette_file = "~/.config/ntm/command_palette.md"
+
+# Palette state (favorites/pins)
+# Managed by the command palette UI (ntm palette)
+[palette_state]
+# pinned = []
+# favorites = []
+
+[agents]
+# Commands used to launch each agent type
+claude = "{{memLimitPrefix}} claude --dangerously-skip-permissions{{if .Model}} --model {{shellQuote .Model}}{{end}}{{if .SystemPromptFile}} --system-prompt-file {{shellQuote .SystemPromptFile}}{{end}}"
+codex = "{{if .SystemPromptFile}}CODEX_SYSTEM_PROMPT=\"$(cat {{shellQuote .SystemPromptFile}})\" {{end}}codex --dangerously-bypass-approvals-and-sandbox -m {{shellQuote (.Model | default \"gpt-5.3-codex\")}} -c model_reasoning_effort=\"xhigh\" -c model_reasoning_summary_format=experimental --search"
+gemini = "gemini{{if .Model}} --model {{shellQuote .Model}}{{end}} --yolo"
+cursor = "cursor{{if .Model}} --model {{shellQuote .Model}}{{end}}"
+windsurf = "windsurf{{if .Model}} --model {{shellQuote .Model}}{{end}}"
+aider = "aider{{if .Model}} --model {{shellQuote .Model}}{{end}}"
+
+[tmux]
+# Tmux-specific settings
+default_panes = 10
+palette_key = "F6"
+pane_init_delay_ms = 1000  # Delay before send-keys to new panes
+history_limit = 50000       # Scrollback buffer lines per pane
+
+[tmux.activity_indicators]
+# Pane border activity coloring thresholds
+enabled = true
+active_seconds = 30   # Mark pane active within this many seconds
+stalled_seconds = 120  # Mark pane stalled after this many seconds
+
+[robot]
+# Robot output defaults (JSON/TOON)
+verbosity = "default"
+
+[robot.output]
+# Robot output format settings
+format = "json"
+pretty = false
+timestamps = true
+compress = false
+
+[agent_mail]
+# Agent Mail server settings for multi-agent coordination
+# Environment variables: AGENT_MAIL_URL, AGENT_MAIL_TOKEN, AGENT_MAIL_ENABLED
+enabled = true
+url = "http://127.0.0.1:8765/mcp/"
+# token = ""  # Or set AGENT_MAIL_TOKEN env var
+auto_register = true
+program_name = "ntm"
+
+[integrations]
+# External tool integrations (dcg, caam, caut, etc.)
+
+[integrations.dcg]
+# Destructive Command Guard (dcg) settings
+enabled = false
+# binary_path = ""  # Auto-detect from PATH
+custom_blocklist = []
+custom_whitelist = []
+# RCH wrapper commands are allowlisted when integrations.rch.dcg_whitelist = true
+# audit_log = "~/.ntm/dcg_audit.log"
+allow_override = true
+
+[integrations.caam]
+# Coding Agent Account Manager (caam) settings
+enabled = true
+# binary_path = ""  # Auto-detect from PATH
+auto_rotate = true
+providers = [ "claude", "openai", "gemini" ]
+rate_limit_patterns = []
+account_cooldown = 300
+alert_threshold = 80
+
+[integrations.rch]
+# Remote Compilation Helper (rch) settings
+enabled = true
+# binary_path = ""  # Auto-detect from PATH
+min_build_time = 10
+intercept_patterns = [ "^cargo (build|test|check|rustc)", "^go (build|test)", "^npm run build", "^make" ]
+fallback_local = true
+show_location = true
+preferred_worker = "auto"
+dcg_whitelist = true
+
+[integrations.caut]
+# Cloud API usage tracker (caut) settings
+enabled = true
+# binary_path = ""  # Auto-detect from PATH
+poll_interval = 60
+alert_threshold = 80
+providers = []
+per_agent_tracking = true
+currency = "USD"
+
+[integrations.process_triage]
+# Process triage (pt) Bayesian process classification settings
+enabled = true
+# binary_path = ""  # Auto-detect from PATH
+check_interval = 30
+idle_threshold = 300
+stuck_threshold = 600
+on_stuck = "alert"
+use_rano_data = true
+
+[integrations.rano]
+# rano network observer settings for per-agent API tracking
+enabled = true
+# binary_path = "rano"  # Auto-detect from PATH
+poll_interval_ms = 1000
+providers = [ "anthropic", "openai", "google" ]
+persist_history = true
+history_days = 7
+
+[integrations.proxy]
+# rust_proxy (local HTTP proxy) settings
+enabled = true
+bin_path = "rust_proxy"
+check_interval = "30s"
+
+[integrations.xf]
+# X/Twitter archive search (xf) settings
+enabled = true
+bin_path = "xf"
+archive_path = "~/.xf/archive"
+default_mode = "hybrid"
+
+[safety]
+# Safety profile presets that set defaults for multiple knobs
+# profile = "standard"  # standard|safe|paranoid
+profile = "standard"
+
+[preflight]
+# Prompt preflight (lint/validation) defaults
+enabled = true
+strict = false
+
+[redaction]
+# Secrets/PII redaction configuration: off|warn|redact|block
+mode = "warn"
+allowlist = []
+disabled_categories = []
+# extra_patterns = { CUSTOM_TOKEN = ["regex"] }
+
+[privacy]
+# Privacy mode prevents persistence of sensitive session data
+enabled = false
+disable_prompt_history = true
+disable_event_logs = true
+disable_checkpoints = true
+disable_scrollback_capture = true
+require_explicit_persist = true
+
+[encryption]
+# Encryption-at-rest configuration for persisted artifacts
+enabled = false
+key_source = "env"
+key_env = "NTM_ENCRYPTION_KEY"
+# key_file = ""
+# key_command = ""
+key_format = "hex"
+# active_key_id = ""
+# [encryption.keyring]
+# current = "<encoded-key-material>"
+
+[send]
+# Defaults prepended to outbound send/broadcast prompts
+# base_prompt = ""
+# base_prompt_file = ""
+
+[prompts]
+# Per-agent-type default prompts
+# cc_default = ""
+# cc_default_file = ""
+# cod_default = ""
+# cod_default_file = ""
+# gmi_default = ""
+# gmi_default_file = ""
+
+[models]
+# Default models when no specifier given
+default_claude = "claude-opus-4-6"
+default_codex = "gpt-5.3-codex"
+default_gemini = "gemini-3-pro-preview"
+
+[models.claude]
+# Claude model aliases (e.g., --cc=2:opus)
+architect = "claude-opus-4-6"
+fast = "claude-sonnet-4-6"
+haiku = "claude-haiku-4-5"
+opus = "claude-opus-4-6"
+sonnet = "claude-sonnet-4-6"
+
+[models.codex]
+# Codex model aliases (e.g., --cod=2:max)
+codex = "gpt-5.3-codex"
+gpt4 = "gpt-4"
+gpt5 = "gpt-5.3-codex"
+o1 = "o1"
+o3 = "o3"
+turbo = "gpt-4-turbo"
+
+[models.gemini]
+# Gemini model aliases (e.g., --gmi=1:flash)
+flash = "gemini-3-flash"
+flash2 = "gemini-2.0-flash"
+pro = "gemini-3-pro-preview"
+
+[alerts]
+# Alert system configuration for proactive problem detection
+enabled = true
+agent_stuck_minutes = 5    # Minutes without output before alerting
+disk_low_threshold_gb = 5.0  # Minimum free disk space (GB)
+mail_backlog_threshold = 10  # Unread messages before alerting
+bead_stale_hours = 24       # Hours before in-progress bead is stale
+context_warning_threshold = 75.0 # Context usage percentage that triggers a warning
+resolved_prune_minutes = 60 # How long to keep resolved alerts
+
+[checkpoints]
+# Automatic checkpoint configuration for risky operations
+enabled = true                    # Top-level toggle for auto-checkpoints
+before_broadcast = true           # Auto-checkpoint before sending to all agents
+before_add_agents = 3            # Auto-checkpoint when adding >= N agents (0 = disabled)
+max_auto_checkpoints = 10        # Max auto-checkpoints per session (rotation)
+scrollback_lines = 500           # Lines of scrollback to capture
+include_git = true               # Capture git state in auto-checkpoints
+auto_checkpoint_on_spawn = false   # Auto-checkpoint when spawning session
+interval_minutes = 0           # Periodic checkpoint interval (0 = disabled)
+on_rotation = true               # Checkpoint before context rotation
+on_error = true                  # Checkpoint when agent error detected
+
+[notifications]
+# Notification system for agent events (errors, crashes, rate limits)
+enabled = true
+events = ["agent.error", "agent.crashed"]  # Events to notify on
+primary = "desktop"
+fallback = "filebox"
+
+# [notifications.routing]
+# "agent.crashed" = [ "desktop", "filebox" ]
+
+[notifications.desktop]
+# Desktop notifications (macOS/Linux)
+enabled = true
+title = "NTM"  # Default notification title
+
+[notifications.webhook]
+# Webhook notifications (Slack, Discord, etc.)
+enabled = false
+# url = "https://hooks.slack.com/..."
+method = "POST"
+template = "{\"event\":\"{{.Type}}\",\"message\":\"{{jsonEscape .Message}}\",\"session\":\"{{jsonEscape .Session}}\",\"pane\":\"{{jsonEscape .Pane}}\",\"agent\":\"{{jsonEscape .Agent}}\",\"agent_type\":\"{{jsonEscape .Agent}}\",\"bead_id\":\"{{jsonEscape (detail .Details \"bead_id\")}}\",\"timestamp\":\"{{.Timestamp}}\",\"details\":{{jsonMap .Details}}}"
+# [notifications.webhook.headers]
+# Authorization = "Bearer <token>"
+
+[notifications.shell]
+# Shell command notifications
+enabled = false
+# command = "~/bin/notify.sh"
+pass_json = true  # Pass event as JSON to stdin
+
+[notifications.log]
+# Log file notifications
+enabled = false
+path = "~/.config/ntm/notifications.log"
+
+[notifications.filebox]
+# File inbox notifications for offline review
+enabled = true
+path = ".ntm/human_inbox"
+
+[resilience]
+# Agent auto-restart and recovery configuration
+auto_restart = false           # Enable automatic agent restart on crash
+max_restarts = 3            # Max restarts per agent before giving up
+restart_delay_seconds = 30  # Seconds to wait before restarting
+health_check_seconds = 10   # Seconds between health checks
+crash_threshold = 3        # Consecutive failures before restart
+notify_on_crash = true       # Send notification when agent crashes
+notify_on_max_restarts = true # Notify when max restarts exceeded
+
+[resilience.rate_limit]
+# Rate limit detection configuration
+detect = true   # Enable rate limit detection
+notify = true   # Send notification on rate limit
+# patterns = ["custom pattern"]  # Custom patterns (in addition to defaults)
+
+[accounts]
+# Multi-account management for quota rotation
+state_file = "~/.config/ntm/account_state.json"            # Path to account state JSON
+auto_rotate = true            # Auto-rotate when limit detected
+reset_buffer_minutes = 15   # Minutes before reset to consider available
+
+# [[accounts.claude]]
+# email = "primary@example.com"
+# alias = "main"
+# priority = 1
+
+# [[accounts.codex]]
+# email = "primary@example.com"
+# alias = "main"
+# priority = 1
+
+# [[accounts.gemini]]
+# email = "primary@example.com"
+# alias = "main"
+# priority = 1
+
+[rotation]
+# Account rotation and restart configuration
+enabled = false               # Top-level toggle
+prefer_restart = true        # Prefer restart over account switch
+auto_open_browser = false     # Auto-open browser for auth
+auto_trigger = false          # Show notification when rate limit detected
+auto_initiate = false         # Automatically start rotation when possible
+continuation_prompt = "Continue where you left off. Previous context: {{.Context}}"
+
+# [[rotation.accounts]]
+# provider = "claude"
+# email = "primary@example.com"
+# alias = "main"
+# priority = 1
+
+[rotation.thresholds]
+warning_percent = 80        # Show warning at this quota %
+critical_percent = 95       # Consider limited at this %
+restart_if_tokens_above = 100000  # Restart if tokens exceed this
+restart_if_session_hours = 8   # Restart after N hours
+
+[rotation.dashboard]
+show_quota_bars = true       # Show quota bars in dashboard
+show_account_status = true   # Show account status
+show_reset_timers = true     # Show reset countdown
+
+[health]
+# Agent health monitoring configuration
+# Proactive monitoring to detect stalled, unresponsive, or unhealthy agents
+enabled = true                # Top-level toggle for health monitoring
+check_interval = 10          # Seconds between health checks
+stall_threshold = 300        # Seconds without output before agent is stalled
+auto_restart = false           # Auto-restart on unhealthy state
+max_restarts = 3            # Max restart attempts before giving up
+restart_backoff_base = 30   # Initial restart delay (seconds)
+restart_backoff_max = 300    # Maximum restart delay (seconds)
+
+[scanner]
+# UBS scanner configuration
+# ubs_path = ""  # Auto-detect from PATH
+
+[scanner.defaults]
+timeout = "120s"
+parallel = true
+exclude = [ "vendor/**", "node_modules/**", ".git/**", "*.min.js", "*.min.css" ]
+languages = []
+
+[scanner.thresholds.pre_commit]
+block_critical = true
+fail_critical = false
+block_errors = 5
+fail_errors = 0
+show_warnings = true
+show_info = false
+
+[scanner.thresholds.ci]
+block_critical = false
+fail_critical = true
+block_errors = 0
+fail_errors = 0
+show_warnings = true
+show_info = false
+
+[scanner.thresholds.dashboard]
+block_critical = false
+fail_critical = false
+block_errors = 0
+fail_errors = 0
+show_warnings = true
+show_info = false
+
+[scanner.thresholds.interactive]
+block_critical = false
+fail_critical = false
+block_errors = 0
+fail_errors = 0
+show_warnings = true
+show_info = true
+
+[scanner.tools]
+enabled = []
+disabled = []
+
+[scanner.beads]
+auto_create = false
+min_severity = "warning"
+auto_close = true
+labels = [ "ubs-scan" ]
+
+[scanner.notifications]
+enabled = true
+on_new_critical = true
+summary_after_scan = false
+
+[cass]
+# CASS (Coding Agent Session Search) configuration
+enabled = true
+show_install_hints = true
+timeout = 30
+# binary_path = ""  # Auto-detect from PATH
+
+[cass.context]
+# Automatic CASS context injection settings
+# Environment variables: NTM_CASS_CONTEXT_ENABLED, NTM_CASS_MIN_RELEVANCE,
+#   NTM_CASS_SKIP_IF_CONTEXT_ABOVE, NTM_CASS_PREFER_SAME_PROJECT
+enabled = true                # Auto-inject context when spawning (--with-cass/--no-cass)
+max_sessions = 3            # Max past sessions to include
+lookback_days = 30          # How far back to search
+max_tokens = 2000            # Token budget for context
+min_relevance = 0.50        # Minimum relevance score (0.0-1.0)
+skip_if_context_above = 80  # Skip if context usage > this % (0-100)
+prefer_same_project = true   # Prefer results from same project
+
+[cass.duplicates]
+# Duplicate detection settings
+enabled = true                # Check for duplicates before sending
+similarity_threshold = 0.70 # 0-1, higher = stricter matching
+lookback_days = 7          # How far back to check
+prompt_on_match = true        # Ask user before proceeding
+
+[cass.search]
+# Search defaults
+default_limit = 10
+default_fields = "summary"
+include_meta = true
+
+[cass.tui]
+# TUI settings
+show_activity_sparkline = true
+show_status_indicator = true
+
+[gemini_setup]
+# Gemini CLI post-spawn setup configuration
+# When enabled, NTM automatically selects the Pro model after spawning Gemini agents
+auto_select_pro_model = true       # Auto-select Pro model (Gemini 3) on spawn
+ready_timeout_seconds = 60       # Seconds to wait for Gemini CLI to be ready
+model_select_timeout_seconds = 20 # Seconds to wait for model selection menu
+verbose = false                     # Show debug output during setup
+
+[context]
+# Context pack composition options
+ms_skills = false                  # Include Meta Skill suggestions in context packs
+
+[context_rotation]
+# Context window rotation configuration
+# Monitors agent context usage and rotates before exhaustion
+enabled = true                    # Top-level toggle for context rotation
+warning_threshold = 0.80        # Warn when context usage exceeds this (0.0-1.0)
+rotate_threshold = 0.95         # Rotate agent when usage exceeds this (0.0-1.0)
+summary_max_tokens = 2000        # Max tokens for handoff summary
+min_session_age_sec = 300        # Don't rotate agents younger than this
+try_compact_first = true         # Try to compact before rotating
+require_confirm = false           # Require user confirmation before rotating
+
+[recovery]
+# Smart session recovery context injection defaults
+enabled = true
+include_agent_mail = true
+include_cm_memories = true
+include_beads_context = true
+max_recovery_tokens = 2000
+auto_inject_on_spawn = true
+stale_threshold_hours = 24
+max_cm_rules = 10
+max_cm_snippets = 3
+
+[cleanup]
+# Automatic temp-file cleanup defaults
+auto_clean_on_startup = true
+max_age_hours = 24
+verbose = false
+
+[assign]
+# Default ntm assign strategy
+strategy = "balanced"
+
+[spawn_pacing]
+# Global spawn scheduler pacing defaults
+enabled = true
+max_concurrent_spawns = 4
+max_spawns_per_sec = 2.00
+burst_size = 5
+default_retries = 3
+retry_delay_ms = 1000
+backpressure_threshold = 50
+
+[spawn_pacing.agent_caps]
+claude_max_concurrent = 3
+claude_rate_per_sec = 1.50
+claude_ramp_up_delay_ms = 0
+codex_max_concurrent = 2
+codex_rate_per_sec = 0.50
+codex_ramp_up_delay_ms = 1000
+gemini_max_concurrent = 2
+gemini_rate_per_sec = 1.00
+gemini_ramp_up_delay_ms = 0
+cooldown_on_failure_ms = 5000
+recovery_successes = 3
+
+[spawn_pacing.headroom]
+enabled = true
+min_free_mb = 512
+min_free_disk_mb = 1024
+max_load_average = 8.00
+max_open_files = 50000
+check_interval_ms = 5000
+
+[spawn_pacing.backoff]
+initial_delay_ms = 1000
+max_delay_ms = 60000
+multiplier = 2.00
+max_consecutive_failures = 5
+global_pause_duration_ms = 30000
+
+[file_reservation]
+# Automatic Agent Mail file reservation settings
+enabled = true
+auto_reserve = true
+auto_release_idle_minutes = 10
+notify_on_conflict = true
+extend_on_activity = true
+default_ttl_minutes = 15
+poll_interval_seconds = 10
+capture_lines = 100
+debug = false
+
+[memory]
+# cass-memory integration defaults
+enabled = true
+include_in_recovery = true
+max_rules = 10
+include_anti_patterns = true
+include_history = true
+query_timeout_seconds = 5
+
+[swarm]
+# Multi-project swarm allocation defaults
+enabled = false
+default_scan_dir = "/dp"
+tier1_threshold = 400
+tier2_threshold = 100
+sessions_per_type = 3
+panes_per_session = 0
+stagger_delay_ms = 300
+auto_rotate_accounts = false
+
+[swarm.tier1_allocation]
+cc = 4
+cod = 4
+gmi = 2
+
+[swarm.tier2_allocation]
+cc = 3
+cod = 3
+gmi = 2
+
+[swarm.tier3_allocation]
+cc = 1
+cod = 1
+gmi = 1
+
+[swarm.marching_orders]
+default = ""
+review = ""
+
+[ensemble]
+# Reasoning ensemble defaults (used when flags are not provided)
+default_ensemble = "architecture-review"
+agent_mix = "cc=3,cod=2,gmi=1"
+assignment = "affinity"
+mode_tier_default = "core"  # core|advanced|experimental
+allow_advanced = false
+
+[ensemble.synthesis]
+# Synthesis defaults (strategy + optional filters)
+strategy = "deliberative"
+# min_confidence = 0.50
+# max_findings = 10
+include_raw_outputs = false
+# conflict_resolution = "highlight"
+
+[ensemble.cache]
+# Context pack caching defaults
+enabled = true
+ttl_minutes = 60
+cache_dir = "~/.cache/ntm/context-packs"
+max_entries = 32
+share_across_modes = true
+
+[ensemble.budget]
+# Token budget defaults
+per_agent = 5000
+total = 30000
+synthesis = 8000
+context_pack = 2000
+
+[ensemble.early_stop]
+# Early stop defaults for ensembles
+enabled = true
+min_agents = 3
+findings_threshold = 0.15
+similarity_threshold = 0.70
+window_size = 3
+
+# Command Palette entries
+# Add your own prompts here
+
+# Quick Actions
+[[palette]]
+key = "fresh_review"
+label = "Fresh Eyes Review"
+category = "Quick Actions"
+prompt = """
+Take a step back and carefully reread the most recent code changes with fresh eyes.
+Look for any obvious bugs, logical errors, or confusing patterns.
+Fix anything you spot without waiting for direction."""
+
+[[palette]]
+key = "fix_bug"
+label = "Fix the Bug"
+category = "Quick Actions"
+prompt = """
+Focus on diagnosing the root cause of the reported issue.
+Don't just patch symptoms - find and fix the underlying problem.
+Implement a real fix, not a workaround."""
+
+[[palette]]
+key = "git_commit"
+label = "Commit Changes"
+category = "Quick Actions"
+prompt = """
+Commit all changed files with detailed, meaningful commit messages.
+Group related changes logically. Push to the remote branch."""
+
+[[palette]]
+key = "run_tests"
+label = "Run All Tests"
+category = "Quick Actions"
+prompt = """
+Run the full test suite and fix any failing tests."""
+
+# Code Quality
+[[palette]]
+key = "refactor"
+label = "Refactor Code"
+category = "Code Quality"
+prompt = """
+Review the current code for opportunities to improve:
+- Extract reusable functions
+- Simplify complex logic
+- Improve naming
+- Remove duplication
+Make incremental improvements while preserving functionality."""
+
+[[palette]]
+key = "add_types"
+label = "Add Type Annotations"
+category = "Code Quality"
+prompt = """
+Add comprehensive type annotations to the codebase.
+Focus on function signatures, class attributes, and complex data structures.
+Use generics where appropriate."""
+
+[[palette]]
+key = "add_docs"
+label = "Add Documentation"
+category = "Code Quality"
+prompt = """
+Add comprehensive docstrings and comments to the codebase.
+Document public APIs, complex algorithms, and non-obvious behavior.
+Keep docs concise but complete."""
+
+# Coordination
+[[palette]]
+key = "status_update"
+label = "Status Update"
+category = "Coordination"
+prompt = """
+Provide a brief status update:
+1. What you just completed
+2. What you're currently working on
+3. Any blockers or questions
+4. What you plan to do next"""
+
+[[palette]]
+key = "handoff"
+label = "Prepare Handoff"
+category = "Coordination"
+prompt = """
+Prepare a handoff document for another agent:
+- Current state of the code
+- What's working and what isn't
+- Open issues and edge cases
+- Recommended next steps"""
+
+[[palette]]
+key = "sync"
+label = "Sync with Main"
+category = "Coordination"
+prompt = """
+Pull latest changes from main branch and resolve any conflicts.
+Run tests after merging to ensure nothing is broken."""
+
+[[palette]]
+key = "check_project_inbox"
+label = "Check Project Inbox"
+category = "Coordination"
+prompt = """
+Check the project inbox for any new messages from other agents or the human overseer.
+Run 'ntm mail inbox' to see the full list of messages."""
+
+# Investigation
+[[palette]]
+key = "explain"
+label = "Explain This Code"
+category = "Investigation"
+prompt = """
+Explain how the current code works in detail.
+Walk through the control flow, data transformations, and key design decisions.
+Note any potential issues or areas for improvement."""
+
+[[palette]]
+key = "find_issue"
+label = "Find the Issue"
+category = "Investigation"
+prompt = """
+Investigate the codebase to find potential issues:
+- Logic errors
+- Edge cases not handled
+- Performance problems
+- Security concerns
+Report findings with specific file locations and line numbers."""
+

@@ -22,8 +22,13 @@ brew "zellij"
 brew "mise"
 brew "gh"
 brew "git"
+brew "jq"             # required by jackknife setup.sh
 brew "lazygit"
 brew "lazydocker"
+
+# Multi-agent workflow stack (jackknife-related)
+brew "dicklesworthstone/tap/ntm"
+brew "dicklesworthstone/tap/bv"   # beads viewer (paired with `br`)
 
 # Editors
 brew "neovim"

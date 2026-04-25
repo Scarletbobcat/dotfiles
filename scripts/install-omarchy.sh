@@ -35,6 +35,7 @@ PACKAGES=(
     mise-bin           # AUR
     github-cli
     git
+    jq                 # required by jackknife setup.sh
     lazygit
     lazydocker         # talks to Docker daemon already provided by Omarchy
 
@@ -43,6 +44,10 @@ PACKAGES=(
 
     # Terminal emulator
     ghostty
+
+    # Multi-agent workflow stack
+    ntm                # AUR or upstream
+    bv-bin             # AUR (beads viewer)
 )
 
 echo "Installing packages via yay..."
@@ -57,6 +62,22 @@ if [[ "$SHELL" != *"zsh"* ]]; then
 fi
 
 echo
+echo "Installing Node via mise (provides runtime for npm-installed CLIs)..."
+mise use -g node@latest
+
+echo
+echo "Installing global npm CLIs (Claude Code, Codex)..."
+npm install -g @anthropic-ai/claude-code @openai/codex
+
+echo
+echo "Installing jackknife stack (beads CLI + agent mail)..."
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash
+
+echo
 echo "Done. Next steps:"
 echo "  1. Run 'chezmoi apply' to lay down configs"
 echo "  2. Log out and back in (or run 'exec zsh') to pick up the new shell setup"
+echo "  3. (Optional) Install Compound Engineering plugin from inside Claude Code:"
+echo "     /plugin marketplace add EveryInc/compound-engineering-plugin"
+echo "     /plugin install compound-engineering"
