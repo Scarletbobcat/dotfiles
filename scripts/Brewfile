@@ -28,3 +28,6 @@ brew "neovim"
 
 # Terminal emulator
 cask "ghostty"
+
+# GUI editors
+cask "zed"
