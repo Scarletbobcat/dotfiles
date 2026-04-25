@@ -6,3 +6,9 @@ sourceDir = "{{ .chezmoi.homeDir }}/github/personal/dotfiles"
 [data]
     name = {{ promptStringOnce . "name" "Your full name (or GitHub handle) for git commits" | quote }}
     email = {{ promptStringOnce . "email" "Your email for git commits" | quote }}
+    # Default theme on Mac — edit chezmoi.toml later to switch.
+    # On Linux, omarchy manages theme switching dynamically and these are
+    # ignored by the relevant templates.
+    theme_ghostty = "Everforest Dark Hard"
+    theme_nvim = "everforest"
+    theme_nvim_bg = "soft"

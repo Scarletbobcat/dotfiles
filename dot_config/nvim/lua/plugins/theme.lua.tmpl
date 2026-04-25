@@ -1,0 +1,17 @@
+-- Sets LazyVim's active colorscheme.
+-- Theme name comes from chezmoi data (~/.config/chezmoi/chezmoi.toml). Change
+-- the value there, run `chezmoi apply`, restart nvim — theme switches.
+-- Available themes are loaded by lua/plugins/all-themes.lua.
+--
+-- On Mac: chezmoi writes this file from the template.
+-- On Linux/Omarchy: chezmoi ignores this path so omarchy's symlink (which
+--   points at ~/.config/omarchy/current/theme/neovim.lua) stays in charge.
+return {
+	{
+		"LazyVim/LazyVim",
+		opts = {
+			colorscheme = "{{ .theme_nvim }}",
+			background = "{{ .theme_nvim_bg }}",
+		},
+	},
+}

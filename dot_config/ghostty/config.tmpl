@@ -2,7 +2,7 @@
 
 # Theme
 {{ if eq .chezmoi.os "darwin" -}}
-theme = "Everforest Dark Hard"
+theme = "{{ .theme_ghostty }}"
 {{- else if eq .chezmoi.os "linux" -}}
 # Dynamic theme via omarchy — switches automatically when you change
 # theme on omarchy. The `?` prefix means "include if exists".
