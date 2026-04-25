@@ -28,8 +28,10 @@ resize-overlay = never
 gtk-toolbar-style = flat
 {{- end }}
 
-# Auto-copy on selection
-copy-on-select = true
+# Auto-copy on selection. Use `clipboard` (not `true`) — on macOS, `true`
+# means the X11 primary-selection clipboard which doesn't exist there.
+# https://github.com/ghostty-org/ghostty/discussions/10346
+copy-on-select = clipboard
 
 # Cursor
 cursor-style = "block"
