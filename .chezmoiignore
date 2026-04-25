@@ -1,7 +1,10 @@
 # Files that live in the source repo but should NOT be copied to $HOME.
+# Patterns without a leading `/` match at any depth; we anchor these to
+# the source-dir root so README/LICENSE files inside managed subdirectories
+# (e.g. nvim plugins) aren't accidentally excluded.
 scripts/**
-README.md
-LICENSE
+/README.md
+/LICENSE
 
 # On Linux, omarchy maintains lua/plugins/theme.lua as a symlink to the
 # currently-active theme so it hot-swaps on theme change. Don't overwrite.
