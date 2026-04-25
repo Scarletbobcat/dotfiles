@@ -1,0 +1,132 @@
+#!/usr/bin/env zsh
+# ~/.zshrc — managed by chezmoi
+# OS-specific bits are templated; aliases live in ~/.config/zsh/aliases.zsh.
+
+# ---------------------------------------------------------------------------
+# Path setup (early, before any tools)
+# ---------------------------------------------------------------------------
+
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+
+{{ if eq .chezmoi.os "darwin" -}}
+# Homebrew (Apple Silicon)
+eval "$(/opt/homebrew/bin/brew shellenv)"
+{{- end }}
+
+# ---------------------------------------------------------------------------
+# History
+# ---------------------------------------------------------------------------
+
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE EXTENDED_HISTORY
+
+# ---------------------------------------------------------------------------
+# Completion (must be set up before sourcing plugins)
+# ---------------------------------------------------------------------------
+
+{{ if eq .chezmoi.os "darwin" -}}
+# zsh-completions FPATH (Homebrew location)
+FPATH="/opt/homebrew/share/zsh-completions:$FPATH"
+{{- end }}
+
+autoload -Uz compinit && compinit
+
+# Case-insensitive completion for lowercase
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+
+# ---------------------------------------------------------------------------
+# Shell plugins (paths differ between Mac/brew and Arch/yay)
+# ---------------------------------------------------------------------------
+
+{{ if eq .chezmoi.os "darwin" -}}
+# fzf-tab must load BEFORE zsh-syntax-highlighting and AFTER compinit
+[[ -f /opt/homebrew/share/fzf-tab/fzf-tab.zsh ]] && source /opt/homebrew/share/fzf-tab/fzf-tab.zsh
+[[ -f /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+[[ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+{{ else if eq .chezmoi.os "linux" -}}
+# Arch package paths (zsh-fzf-tab-git from AUR, others from extra)
+[[ -f /usr/share/zsh/plugins/fzf-tab/fzf-tab.plugin.zsh ]] && source /usr/share/zsh/plugins/fzf-tab/fzf-tab.plugin.zsh
+[[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+[[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+{{- end }}
+
+# fzf shell integration (Ctrl-R history search, Ctrl-T file picker, **<Tab>)
+command -v fzf &>/dev/null && source <(fzf --zsh)
+
+# ---------------------------------------------------------------------------
+# Tool initialization
+# ---------------------------------------------------------------------------
+
+# mise — runtime version manager (replaces rbenv, pyenv, nvm, etc.)
+command -v mise &>/dev/null && eval "$(mise activate zsh)"
+
+# zoxide — smart cd (`z <pattern>` jumps to frecent matches; `zi` for picker)
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+[[ -d "$BUN_INSTALL/bin" ]] && export PATH="$BUN_INSTALL/bin:$PATH"
+[[ -s "$BUN_INSTALL/_bun" ]] && source "$BUN_INSTALL/_bun"
+
+# pyenv (only if installed; mise can replace this)
+export PYENV_ROOT="$HOME/.pyenv"
+if [[ -d "$PYENV_ROOT/bin" ]]; then
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    command -v pyenv &>/dev/null && eval "$(pyenv init -)"
+fi
+
+# NTM — Named Tmux Manager (and its safety wrappers)
+if command -v ntm &>/dev/null; then
+    eval "$(ntm shell zsh)"
+    export PATH="$HOME/.ntm/bin:$PATH"
+fi
+
+# beads_rust (br)
+unalias br 2>/dev/null  # br installer leaves a conflicting alias sometimes
+
+# ---------------------------------------------------------------------------
+# OS-specific PATH additions
+# ---------------------------------------------------------------------------
+
+{{ if eq .chezmoi.os "darwin" -}}
+# LM Studio (only present if you've installed the app)
+[[ -d "$HOME/.lmstudio/bin" ]] && export PATH="$PATH:$HOME/.lmstudio/bin"
+{{- end }}
+
+# ---------------------------------------------------------------------------
+# Editor
+# ---------------------------------------------------------------------------
+
+export EDITOR='nvim'
+export VISUAL='nvim'
+
+# ---------------------------------------------------------------------------
+# Aliases (cross-platform; OS-specifics stay in this file)
+# ---------------------------------------------------------------------------
+
+[[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
+
+{{ if eq .chezmoi.os "darwin" -}}
+# Mac clipboard helpers
+alias copy='pbcopy'
+alias paste='pbpaste'
+{{ else if eq .chezmoi.os "linux" -}}
+# Wayland clipboard helpers (Omarchy/Hyprland)
+alias copy='wl-copy'
+alias paste='wl-paste'
+{{- end }}
+
+# ---------------------------------------------------------------------------
+# Per-machine local overrides (untracked, machine-specific)
+# ---------------------------------------------------------------------------
+
+[[ -f ~/.localrc ]] && source ~/.localrc
+
+# ---------------------------------------------------------------------------
+# Prompt (must be last — starship overrides PS1)
+# ---------------------------------------------------------------------------
+
+command -v starship &>/dev/null && eval "$(starship init zsh)"
