@@ -25,18 +25,22 @@ echo "Installing global npm CLIs (Claude Code, Codex)..."
 npm install -g @anthropic-ai/claude-code @openai/codex
 
 echo
-echo "Installing jackknife stack (beads CLI + agent mail)..."
+echo "Installing beads CLI + agent mail..."
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
 # agent mail's installer dumps project-local MCP configs (codex.mcp.json,
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
 # noise lands somewhere disposable; the home-level configs it also writes
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
 ( cd "$(mktemp -d)" && curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash )
-curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh?$(date +%s)" | bash -s -- --easy-mode
 
+DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 echo
 echo "Done. Next steps:"
-echo "  1. Run 'chezmoi apply' to lay down configs"
+echo "  1. Initialize chezmoi against this repo (replace the path if you cloned"
+echo "     somewhere other than $DOTFILES_DIR):"
+echo "       chezmoi init --apply -S \"$DOTFILES_DIR\" \\"
+echo "         https://github.com/Scarletbobcat/dotfiles.git"
+echo "     On subsequent re-runs you can just use: chezmoi apply"
 echo "  2. Restart your terminal (or run 'exec zsh') to pick up the new shell setup"
 echo "  3. (Optional) Install Compound Engineering plugin from inside Claude Code:"
 echo "     /plugin marketplace add EveryInc/compound-engineering-plugin"

@@ -77,19 +77,35 @@ run_installer() {
   rm -f "$tmp"
 }
 
-echo "Installing jackknife stack (beads CLI + agent mail + ntm)..."
+echo "Installing beads CLI + agent mail + ntm + beads viewer..."
 run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)"
 # agent mail's installer dumps project-local MCP configs (codex.mcp.json,
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
 # noise lands somewhere disposable; the home-level configs it also writes
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
 ( cd "$(mktemp -d)" && run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" )
+# ntm's --easy-mode wires up shell integration + PATH non-interactively.
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh?$(date +%s)" | bash -s -- --easy-mode
 run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh?$(date +%s)"
 
+DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 echo
 echo "Done. Next steps:"
-echo "  1. Run 'chezmoi apply' to lay down configs"
+echo "  1. Initialize chezmoi against this repo (replace the path if you cloned"
+echo "     somewhere other than $DOTFILES_DIR):"
+echo "       chezmoi init --apply -S \"$DOTFILES_DIR\" \\"
+echo "         https://github.com/Scarletbobcat/dotfiles.git"
+echo "     On subsequent re-runs you can just use: chezmoi apply"
 echo "  2. Log out and back in (or run 'exec zsh') to pick up the new shell setup"
 echo "  3. (Optional) Install Compound Engineering plugin from inside Claude Code:"
 echo "     /plugin marketplace add EveryInc/compound-engineering-plugin"
 echo "     /plugin install compound-engineering"
+
+# On re-runs where chezmoi has already laid down ~/.zshrc, drop straight
+# into a login zsh so the current session picks up the new shell. Skipped
+# on a true first run to avoid landing in an unconfigured zsh.
+if [[ -f "$HOME/.zshrc" ]] && [[ "$SHELL" != *"zsh"* ]]; then
+  echo
+  echo "Switching current session to zsh..."
+  exec zsh -l
+fi

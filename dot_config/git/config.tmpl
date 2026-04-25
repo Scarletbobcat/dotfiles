@@ -5,11 +5,12 @@
 	name = {{ .name }}
 	email = {{ .email }}
 
-# Auto-switch identity based on directory.
+# Auto-switch identity based on directory. Paths come from chezmoi data
+# (git_dir_personal / git_dir_work) so they can be overridden per machine.
 # Blocks are harmless when their gitdir doesn't exist on this machine.
-[includeIf "gitdir:~/github/personal/"]
+[includeIf "gitdir:{{ index . "git_dir_personal" | default "~/github/personal/" }}"]
 	path = ~/.config/git/config-personal
-[includeIf "gitdir:~/github/work/"]
+[includeIf "gitdir:{{ index . "git_dir_work" | default "~/github/work/" }}"]
 	path = ~/.config/git/config-work
 
 [init]

@@ -1,11 +1,16 @@
 {{- /* Auto-generates ~/.config/chezmoi/chezmoi.toml on first `chezmoi init`. */ -}}
 {{- /* Prompts for identity values that differ per machine. */ -}}
 
-sourceDir = "{{ .chezmoi.homeDir }}/github/personal/dotfiles"
+sourceDir = "{{ .chezmoi.sourceDir }}"
 
 [data]
     name = {{ promptStringOnce . "name" "Your full name (or GitHub handle) for git commits" | quote }}
     email = {{ promptStringOnce . "email" "Your email for git commits" | quote }}
+    # Directory prefixes for git identity auto-switching (used by
+    # ~/.config/git/config's [includeIf] blocks). Edit chezmoi.toml + run
+    # `chezmoi apply` if your code lives somewhere else on a given machine.
+    git_dir_personal = "~/github/personal/"
+    git_dir_work     = "~/github/work/"
     # Default theme on Mac — edit chezmoi.toml later to switch.
     # On Linux, omarchy manages theme switching dynamically and these are
     # ignored by the relevant templates.

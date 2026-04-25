@@ -15,18 +15,20 @@ dot_config/              Mirrors ~/.config/. Subdirectories below.
 ├── ghostty/             Terminal emulator
 ├── git/                 Templated. Identity from chezmoi.toml + [includeIf]
 │                        rules for ~/github/personal/ vs ~/github/work/.
+├── ntm/                 Named Tmux Manager config (templated)
 ├── nvim/                LazyVim setup
 ├── starship.toml        Prompt config (Omarchy default — Everforest)
+├── tmux/                tmux.conf
 ├── zed/                 Zed editor settings
+├── zellij/              Zellij config + layouts (ai-coding.kdl)
 └── zsh/aliases.zsh      Cross-platform zsh aliases (sourced from ~/.zshrc)
 
 dot_zshrc.tmpl           Main shell rc, OS-templated for Mac brew paths vs
                          Arch yay paths.
-CLAUDE.md                Home-level Claude Code instructions.
 
 scripts/                 NOT applied to $HOME (.chezmoiignore'd).
 ├── Brewfile             macOS package list (brew bundle)
-├── install-mac.sh       Installs everything in Brewfile
+├── install-mac.sh       Installs everything in Brewfile + chezmoi + extra CLIs
 └── install-omarchy.sh   Same packages via yay (handles official + AUR)
 ```
 
@@ -35,40 +37,49 @@ in `.tmpl` are run through Go's text/template at apply time.
 
 ## Bootstrap a fresh machine
 
+The repo can live anywhere — `~/github/personal/dotfiles` is just my
+convention. Substitute whatever path you cloned to in the commands below;
+the install scripts and `chezmoi init` will work from any location.
+
 ### macOS
 
 ```sh
-# Clone the repo to its expected location
+# Clone the repo wherever you want
 git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
+cd ~/github/personal/dotfiles
 
-# Install all packages (idempotent; re-run anytime)
-~/github/personal/dotfiles/scripts/install-mac.sh
+# Install Homebrew (if missing), all packages from Brewfile (incl. chezmoi),
+# and extra CLIs (Claude Code, Codex, beads, agent mail). Idempotent.
+./scripts/install-mac.sh
 
-# Initialize chezmoi (prompts for name + email, populates chezmoi.toml)
-chezmoi init --apply -S ~/github/personal/dotfiles \
+# Initialize chezmoi against this repo (prompts for name + email, populates
+# ~/.config/chezmoi/chezmoi.toml, then applies all dotfiles to $HOME)
+chezmoi init --apply -S "$(pwd)" \
     https://github.com/Scarletbobcat/dotfiles.git
 
 # Restart your terminal (or `exec zsh`) to pick up the new shell setup
 ```
 
-The `-S` flag is needed because the source directory lives at
-`~/github/personal/dotfiles/` rather than chezmoi's XDG default
-(`~/.local/share/chezmoi/`). After init, that path is persisted in
-`~/.config/chezmoi/chezmoi.toml`, so subsequent `chezmoi` commands don't
-need it.
+The `-S` flag tells chezmoi to use this clone as its source directory
+instead of cloning a fresh copy into `~/.local/share/chezmoi/`. The path
+gets persisted into `~/.config/chezmoi/chezmoi.toml` (via
+`{{ .chezmoi.sourceDir }}` in the template), so subsequent `chezmoi`
+commands don't need `-S`.
 
 ### Omarchy / Arch
 
 ```sh
 git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
-~/github/personal/dotfiles/scripts/install-omarchy.sh
-chezmoi init --apply -S ~/github/personal/dotfiles \
+cd ~/github/personal/dotfiles
+./scripts/install-omarchy.sh
+chezmoi init --apply -S "$(pwd)" \
     https://github.com/Scarletbobcat/dotfiles.git
 # Log out and back in (or `exec zsh`) so the shell change takes effect.
 ```
 
 The install script also runs `chsh -s $(which zsh)` if zsh isn't your
-default shell yet.
+default shell yet, and (on re-runs after chezmoi has applied at least
+once) drops you straight into a login zsh.
 
 ## Per-machine state
 
@@ -77,14 +88,16 @@ in this repo**. The init step generates it from `.chezmoi.toml.tmpl`. Looks
 like:
 
 ```toml
-sourceDir = "/Users/tienhoang/github/personal/dotfiles"
+sourceDir = "/Users/tienhoang/github/personal/dotfiles"  # whatever you passed to -S
 
 [data]
-    name           = "tienhoang-k2vp"        # work identity (Mac default)
-    email          = "tien@k2vp.com"
-    theme_ghostty  = "Everforest Dark Hard"  # Mac theme (Linux uses omarchy)
-    theme_nvim     = "everforest"
-    theme_nvim_bg  = "soft"
+    name             = "tienhoang-k2vp"        # work identity (Mac default)
+    email            = "tien@k2vp.com"
+    git_dir_personal = "~/github/personal/"    # gitdir prefix for personal identity
+    git_dir_work     = "~/github/work/"        # gitdir prefix for work identity
+    theme_ghostty    = "Everforest Dark Hard"  # Mac theme (Linux uses omarchy)
+    theme_nvim       = "everforest"
+    theme_nvim_bg    = "soft"
 ```
 
 Edit this file and `chezmoi apply` to change identity or theme on Mac.
@@ -95,14 +108,17 @@ Git identity auto-switches based on what directory you're in:
 
 | Path | Identity |
 |------|----------|
-| Anywhere not matching below | `chezmoi.toml` defaults (work on Mac, personal on Linux) |
-| `~/github/personal/**` | personal (Scarletbobcat / yahoo email) |
-| `~/github/work/**` | work (tienhoang-k2vp / k2vp email) |
+| Anywhere not matching below | `chezmoi.toml` defaults (`name` / `email` from prompts) |
+| Under `git_dir_personal` (default `~/github/personal/`) | personal (Scarletbobcat / yahoo email) |
+| Under `git_dir_work` (default `~/github/work/`) | work (tienhoang-k2vp / k2vp email) |
 
-This is `[includeIf "gitdir:..."]` in `~/.config/git/config`. Both override
-files (`config-personal`, `config-work`) live in chezmoi and apply to both
-machines. The `[includeIf]` blocks no-op silently when their target gitdir
-doesn't exist on a machine.
+This is `[includeIf "gitdir:..."]` in `~/.config/git/config`, with the
+prefixes templated from the `git_dir_personal` and `git_dir_work` chezmoi
+data variables. Override them per machine by editing
+`~/.config/chezmoi/chezmoi.toml` and running `chezmoi apply`. The override
+files (`config-personal`, `config-work`) live in this repo and apply to
+both machines. The `[includeIf]` blocks no-op silently when their target
+gitdir doesn't exist on a given machine.
 
 ## Themes
 
