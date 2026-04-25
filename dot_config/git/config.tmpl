@@ -1,4 +1,4 @@
-# ~/.gitconfig — managed by chezmoi
+# ~/.config/git/config — managed by chezmoi (XDG location)
 # Identity comes from per-machine ~/.config/chezmoi/chezmoi.toml
 
 [user]
@@ -8,9 +8,9 @@
 # Auto-switch identity based on directory.
 # Blocks are harmless when their gitdir doesn't exist on this machine.
 [includeIf "gitdir:~/github/personal/"]
-	path = ~/.gitconfig-personal
+	path = ~/.config/git/config-personal
 [includeIf "gitdir:~/github/work/"]
-	path = ~/.gitconfig-work
+	path = ~/.config/git/config-work
 
 [init]
 	defaultBranch = main
@@ -43,7 +43,6 @@
 	autoupdate = true
 
 [core]
-	excludesfile = ~/.gitignore
 	editor = vim
 
 [mergetool]
