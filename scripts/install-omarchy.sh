@@ -35,6 +35,8 @@ PACKAGES=(
     mise-bin           # AUR
     github-cli
     git
+    lazygit
+    lazydocker         # talks to Docker daemon already provided by Omarchy
 
     # Editors
     neovim

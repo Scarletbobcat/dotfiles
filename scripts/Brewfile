@@ -22,6 +22,8 @@ brew "zellij"
 brew "mise"
 brew "gh"
 brew "git"
+brew "lazygit"
+brew "lazydocker"
 
 # Editors
 brew "neovim"
@@ -31,3 +33,6 @@ cask "ghostty"
 
 # GUI editors
 cask "zed"
+
+# Docker daemon (alternative to Docker Desktop — faster, lighter on Mac)
+cask "orbstack"

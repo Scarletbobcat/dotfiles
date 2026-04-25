@@ -1,0 +1,68 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="status-bar"
+        }
+    }
+
+    tab name="Coding" focus=true {
+        pane split_direction="vertical" {
+            pane size="70%" split_direction="horizontal" {
+                pane size="60%" {
+                    command "claude"
+                }
+                pane size="40%" {
+                    command "codex"
+                }
+            }
+            pane size="30%" split_direction="horizontal" {
+                pane size="60%" {
+                    command "bv"
+                }
+                pane size="40%" {
+                }
+            }
+        }
+    }
+
+    tab name="Planning" {
+        pane split_direction="vertical" {
+            pane size="50%" split_direction="horizontal" {
+                pane size="70%" {
+                    command "codex"
+                }
+                pane size="30%" {
+                }
+            }
+            pane size="50%" {
+                command "bv"
+            }
+        }
+    }
+
+    tab name="Review" {
+        pane split_direction="vertical" {
+            pane size="70%" {
+                command "lazygit"
+            }
+            pane size="30%" {
+                // empty pane for review notes/terminal
+            }
+        }
+    }
+
+    tab name="Terminal" {
+        pane
+    }
+
+    tab name="Tasks" {
+        pane {
+            command "bv"
+            args "board"
+        }
+    }
+}
