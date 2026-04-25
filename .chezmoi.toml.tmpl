@@ -1,0 +1,8 @@
+{{- /* Auto-generates ~/.config/chezmoi/chezmoi.toml on first `chezmoi init`. */ -}}
+{{- /* Prompts for identity values that differ per machine. */ -}}
+
+sourceDir = "{{ .chezmoi.homeDir }}/github/personal/dotfiles"
+
+[data]
+    name = {{ promptStringOnce . "name" "Your full name (or GitHub handle) for git commits" | quote }}
+    email = {{ promptStringOnce . "email" "Your email for git commits" | quote }}
