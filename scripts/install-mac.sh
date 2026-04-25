@@ -27,7 +27,11 @@ npm install -g @anthropic-ai/claude-code @openai/codex
 echo
 echo "Installing jackknife stack (beads CLI + agent mail)..."
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
-curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash
+# agent mail's installer dumps project-local MCP configs (codex.mcp.json,
+# cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
+# noise lands somewhere disposable; the home-level configs it also writes
+# (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
+( cd "$(mktemp -d)" && curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash )
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh?$(date +%s)" | bash -s -- --easy-mode
 
 echo

@@ -23,6 +23,7 @@ PACKAGES=(
   mise # AUR
   github-cli
   git
+  chezmoi # dotfiles manager (this very repo)
   jq # required by jackknife setup.sh
   lazygit
   lazydocker # talks to Docker daemon already provided by Omarchy
@@ -78,7 +79,11 @@ run_installer() {
 
 echo "Installing jackknife stack (beads CLI + agent mail + ntm)..."
 run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)"
-run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)"
+# agent mail's installer dumps project-local MCP configs (codex.mcp.json,
+# cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
+# noise lands somewhere disposable; the home-level configs it also writes
+# (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
+( cd "$(mktemp -d)" && run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" )
 run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh?$(date +%s)"
 
 echo

@@ -22,6 +22,7 @@ brew "zellij"
 brew "mise"
 brew "gh"
 brew "git"
+brew "chezmoi"        # dotfiles manager (this very repo)
 brew "jq"             # required by jackknife setup.sh
 brew "lazygit"
 brew "lazydocker"
