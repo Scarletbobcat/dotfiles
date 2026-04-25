@@ -7,47 +7,31 @@
 set -euo pipefail
 
 if ! command -v yay &>/dev/null; then
-    echo "yay not installed. Install it first or use a base Omarchy image."
-    echo "  sudo pacman -S --needed git base-devel"
-    echo "  git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg -si"
-    exit 1
+  echo "yay not installed. Install it first or use a base Omarchy image."
+  echo "  sudo pacman -S --needed git base-devel"
+  echo "  git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg -si"
+  exit 1
 fi
 
 PACKAGES=(
-    # Shell + plugins
-    zsh
-    starship
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    zsh-completions
-    zsh-fzf-tab-git    # AUR
-    zoxide
-    fzf
+  # Shell + plugins
+  zsh
+  starship
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+  zsh-completions
+  mise # AUR
+  github-cli
+  git
+  jq # required by jackknife setup.sh
+  lazygit
+  lazydocker # talks to Docker daemon already provided by Omarchy
 
-    # Modern CLI tools
-    eza
+  # Editors
+  neovim
 
-    # Terminal multiplexers
-    tmux
-    zellij
-
-    # Dev tooling
-    mise-bin           # AUR
-    github-cli
-    git
-    jq                 # required by jackknife setup.sh
-    lazygit
-    lazydocker         # talks to Docker daemon already provided by Omarchy
-
-    # Editors
-    neovim
-
-    # Terminal emulator
-    ghostty
-
-    # Multi-agent workflow stack
-    ntm                # AUR or upstream
-    bv-bin             # AUR (beads viewer)
+  # Terminal emulator
+  ghostty
 )
 
 echo "Installing packages via yay..."
@@ -55,10 +39,10 @@ yay -S --needed --noconfirm "${PACKAGES[@]}"
 
 # Make zsh the default shell if it isn't already
 if [[ "$SHELL" != *"zsh"* ]]; then
-    echo
-    echo "Setting zsh as default shell. You'll be prompted for your password."
-    chsh -s "$(which zsh)"
-    echo "Default shell changed. Log out and back in for it to take effect."
+  echo
+  echo "Setting zsh as default shell. You'll be prompted for your password."
+  chsh -s "$(which zsh)"
+  echo "Default shell changed. Log out and back in for it to take effect."
 fi
 
 echo
@@ -70,9 +54,32 @@ echo "Installing global npm CLIs (Claude Code, Codex)..."
 npm install -g @anthropic-ai/claude-code @openai/codex
 
 echo
-echo "Installing jackknife stack (beads CLI + agent mail)..."
-curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
-curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash
+run_installer() {
+  local url="$1"
+  local tmp
+  tmp=$(mktemp)
+  if ! curl -fsSL "$url" -o "$tmp"; then
+    echo "ERROR: Failed to download installer from $url" >&2
+    rm -f "$tmp"
+    return 1
+  fi
+  bash "$tmp" || {
+    local code=$?
+    # Exit code 141 = SIGPIPE (broken pipe) — means installer exited early
+    # (e.g. already up to date). Not a real failure.
+    if [[ $code -ne 141 ]]; then
+      echo "ERROR: Installer failed with exit code $code ($url)" >&2
+      rm -f "$tmp"
+      return 1
+    fi
+  }
+  rm -f "$tmp"
+}
+
+echo "Installing jackknife stack (beads CLI + agent mail + ntm)..."
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)"
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)"
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh?$(date +%s)"
 
 echo
 echo "Done. Next steps:"
