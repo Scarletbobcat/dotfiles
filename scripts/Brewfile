@@ -1,0 +1,30 @@
+# macOS package list — installed via `scripts/install-mac.sh`.
+# Run `brew bundle dump --file=scripts/Brewfile --force` to regenerate
+# from currently-installed packages.
+
+# Shell: prompt, plugins, smart cd
+brew "starship"
+brew "zsh-autosuggestions"
+brew "zsh-syntax-highlighting"
+brew "zsh-completions"
+brew "fzf-tab"
+brew "zoxide"
+brew "fzf"
+
+# Modern CLI tools
+brew "eza"
+
+# Terminal multiplexers (using both for now)
+brew "tmux"
+brew "zellij"
+
+# Dev tooling
+brew "mise"
+brew "gh"
+brew "git"
+
+# Editors
+brew "neovim"
+
+# Terminal emulator
+cask "ghostty"

@@ -1,0 +1,4 @@
+# Files that live in the source repo but should NOT be copied to $HOME.
+scripts/**
+README.md
+LICENSE
