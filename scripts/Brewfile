@@ -13,6 +13,7 @@ brew "fzf"
 
 # Modern CLI tools
 brew "eza"
+brew "fd"             # fast `find` replacement; required by snacks.nvim projects picker
 
 # Terminal multiplexers (using both for now)
 brew "tmux"
