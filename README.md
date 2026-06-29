@@ -29,7 +29,9 @@ dot_zshrc.tmpl           Main shell rc, OS-templated for Mac brew paths vs
 scripts/                 NOT applied to $HOME (.chezmoiignore'd).
 ├── Brewfile             macOS package list (brew bundle)
 ├── install-mac.sh       Installs everything in Brewfile + chezmoi + extra CLIs
-└── install-omarchy.sh   Same packages via yay (handles official + AUR)
+├── install-omarchy.sh   Same packages via yay (handles official + AUR)
+└── setup-tailscale.sh   Enables Tailscale SSH so the machine is reachable
+                         remotely (macOS + Linux; see "Remote SSH access")
 ```
 
 Files prefixed `dot_` map to `.` in `$HOME` (chezmoi convention). Files ending
@@ -80,6 +82,76 @@ chezmoi init --apply -S "$(pwd)" \
 The install script also runs `chsh -s $(which zsh)` if zsh isn't your
 default shell yet, and (on re-runs after chezmoi has applied at least
 once) drops you straight into a login zsh.
+
+## Remote SSH access (Tailscale SSH)
+
+To reach a machine over SSH from anywhere — another laptop, or a phone — without
+exposing it to the public internet or managing SSH keys, use Tailscale SSH.
+The `tailscale` package is already in the Brewfile / yay list, so after a normal
+bootstrap just run, on the machine you want to reach:
+
+```sh
+./scripts/setup-tailscale.sh
+```
+
+Idempotent and OS-aware (`uname`-based, so it works on both macOS and Omarchy).
+On that target machine it:
+
+- **macOS** — installs the headless `tailscaled` daemon (the menu-bar app can't
+  run an SSH server) as a root launchd daemon, and sets the Mac to never sleep
+  on AC power so it stays reachable (revert with `sudo pmset -c sleep 1`).
+- **Linux** — installs `tailscale` and enables the `tailscaled` systemd service.
+- Then runs `tailscale up --ssh` (prints a browser login URL on first run) so
+  the machine authenticates to your tailnet and accepts Tailscale SSH.
+
+Auth is your tailnet identity, not SSH keys. New tailnets ship with a default
+policy that lets you SSH to your own devices, so it works out of the box; the
+first connection may pop a quick browser re-auth "check" (switch to "accept" in
+the admin console to skip it).
+
+### Connecting in
+
+Any device that's also on your tailnet (signed into the same account) can reach
+it. Install the **Tailscale** app there, then SSH to the machine's name or
+`100.x.y.z` IP (find them with `tailscale status`):
+
+```sh
+ssh <user>@<machine-name>     # no key setup — Tailscale authenticates you
+```
+
+From a **phone**: install the **Tailscale** app (puts the phone on your tailnet)
+plus any SSH client app — **Termius** is the easy pick (iOS + Android) — and
+connect to the same name/IP. No key needs to live on the phone.
+
+### Keeping it running
+
+The daemon is a launchd (macOS) / systemd (Linux) service, so it auto-starts at
+boot, restarts itself on crash, and reconnects across reboots, sleep/wake, and
+network changes. Two things worth doing/knowing:
+
+- **Disable key expiry** for the machine in the admin console (Machines → device
+  → ⋮ → Disable key expiry). Otherwise its key expires (~180 days) and it drops
+  off the tailnet until you re-login — exactly when you're away and can't.
+- **Sleep is the usual "can't reach it" cause**, not the daemon. `setup-tailscale.sh`
+  sets the Mac to never sleep on AC, so keep it plugged in with the lid open. It
+  reconnects automatically on wake. Revert that with `sudo pmset -c sleep 1`.
+
+### Managing the daemon
+
+The `tsd` shell helper (in `dot_config/zsh/aliases.zsh`, OS-detected at runtime)
+wraps daemon control:
+
+```sh
+tsd            # tailnet status (peers, online/offline) — same as `tailscale status`
+tsd restart    # restart the daemon — do this after `brew upgrade tailscale`
+tsd stop       # stop the daemon (machine goes offline)
+tsd start      # start it again
+```
+
+For a lighter logical disconnect that leaves the daemon running, use the CLI
+directly: `sudo tailscale down` / `sudo tailscale up --ssh`. Raw service
+equivalents if you ever need them: macOS `sudo launchctl kickstart -k
+system/com.tailscale.tailscaled`; Linux `sudo systemctl restart tailscaled`.
 
 ## Per-machine state
 

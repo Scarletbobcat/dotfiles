@@ -19,6 +19,9 @@ brew "fd"             # fast `find` replacement; required by snacks.nvim project
 brew "tmux"
 brew "zellij"
 
+# Networking / remote access
+brew "tailscale"     # headless daemon for Tailscale SSH (see scripts/setup-tailscale.sh)
+
 # Dev tooling
 brew "mise"
 brew "gh"

@@ -100,3 +100,40 @@ sff() {
     local file
     file=$(ff) && [ -n "$file" ] && scp "$file" "$1"
 }
+
+# ---------------------------------------------------------------------------
+# Tailscale daemon control (the launchd/systemd service — not the `tailscale`
+# CLI). Set up by dotfiles' scripts/setup-tailscale.sh. OS-detected at runtime.
+#   tsd            show tailnet status (default)
+#   tsd restart    restart the daemon (e.g. after `brew upgrade tailscale`)
+#   tsd stop       stop the daemon (this machine goes offline)
+#   tsd start      start it again
+# For a lighter disconnect that leaves the daemon running, use the CLI:
+#   sudo tailscale down   /   sudo tailscale up --ssh
+# ---------------------------------------------------------------------------
+
+if command -v tailscale &>/dev/null; then
+    tsd() {
+        local action="${1:-status}"
+        case "$action" in
+            status) command tailscale status; return ;;
+            restart|stop|start) ;;
+            *) echo "usage: tsd {status|restart|stop|start}"; return 1 ;;
+        esac
+        case "$(uname -s)" in
+            Darwin)
+                local svc="system/com.tailscale.tailscaled"
+                local plist="/Library/LaunchDaemons/com.tailscale.tailscaled.plist"
+                case "$action" in
+                    restart) sudo launchctl kickstart -k "$svc" && echo "tailscaled restarted" ;;
+                    stop)    sudo launchctl bootout "$svc" 2>/dev/null; echo "tailscaled stopped" ;;
+                    start)   sudo launchctl bootstrap system "$plist" 2>/dev/null; echo "tailscaled started" ;;
+                esac
+                ;;
+            Linux)
+                sudo systemctl "$action" tailscaled && echo "tailscaled $action: ok"
+                ;;
+            *) echo "tsd: unsupported OS"; return 1 ;;
+        esac
+    }
+fi

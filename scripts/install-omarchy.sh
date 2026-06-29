@@ -27,6 +27,7 @@ PACKAGES=(
   jq # required by jackknife setup.sh
   lazygit
   lazydocker # talks to Docker daemon already provided by Omarchy
+  tailscale # headless daemon for Tailscale SSH (see scripts/setup-tailscale.sh)
 
   # Editors
   neovim
@@ -97,7 +98,9 @@ echo "       chezmoi init --apply -S \"$DOTFILES_DIR\" \\"
 echo "         https://github.com/Scarletbobcat/dotfiles.git"
 echo "     On subsequent re-runs you can just use: chezmoi apply"
 echo "  2. Log out and back in (or run 'exec zsh') to pick up the new shell setup"
-echo "  3. (Optional) Install Compound Engineering plugin from inside Claude Code:"
+echo "  3. (Optional) Make this machine reachable over your tailnet via Tailscale SSH:"
+echo "       ./scripts/setup-tailscale.sh"
+echo "  4. (Optional) Install Compound Engineering plugin from inside Claude Code:"
 echo "     /plugin marketplace add EveryInc/compound-engineering-plugin"
 echo "     /plugin install compound-engineering"
 
