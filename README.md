@@ -50,8 +50,8 @@ the install scripts and `chezmoi init` will work from any location.
 git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
 cd ~/github/personal/dotfiles
 
-# Install Homebrew (if missing), all packages from Brewfile (incl. chezmoi),
-# and extra CLIs (Claude Code, Codex, beads, agent mail). Idempotent.
+# Install Homebrew if missing and Brewfile packages (including VS Code and Codex).
+# Install Node.js + npm via mise, Claude Code via npm, plus beads and agent mail.
 ./scripts/install-mac.sh
 
 # Initialize chezmoi against this repo (prompts for name + email, populates

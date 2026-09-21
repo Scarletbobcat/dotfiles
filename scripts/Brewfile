@@ -42,4 +42,7 @@ brew "neovim"
 cask "ghostty"
 
 # GUI editors
-cask "zed"
+cask "visual-studio-code"
+
+# AI coding assistants
+cask "codex"          # CLI; Claude Code is installed via npm in install-mac.sh

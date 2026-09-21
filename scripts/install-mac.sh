@@ -17,12 +17,13 @@ brew bundle --file="$(dirname "$0")/Brewfile"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 echo
-echo "Installing Node via mise (provides runtime for npm-installed CLIs)..."
+echo "Installing Node.js and npm via mise..."
 mise use -g node@latest
 
 echo
-echo "Installing global npm CLIs (Claude Code, Codex)..."
-npm install -g @anthropic-ai/claude-code @openai/codex
+echo "Installing Claude Code via npm..."
+# Run through mise so Node and npm are available before shell setup is applied.
+mise exec node@latest -- npm install -g @anthropic-ai/claude-code
 
 echo
 echo "Installing beads CLI + agent mail..."
