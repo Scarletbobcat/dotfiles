@@ -1,16 +1,23 @@
 {{- /* Auto-generates ~/.config/chezmoi/chezmoi.toml on first `chezmoi init`. */ -}}
 {{- /* Prompts for identity values that differ per machine. */ -}}
+{{- /* Keep the old root for machines initialized with the previous defaults. */ -}}
+{{- $projectsDir := printf "%s/code" .chezmoi.homeDir -}}
+{{- if eq (index . "git_dir_personal") "~/github/personal/" -}}
+{{- $projectsDir = printf "%s/github" .chezmoi.homeDir -}}
+{{- end -}}
 
 sourceDir = "{{ .chezmoi.sourceDir }}"
 
 [data]
     name = {{ promptStringOnce . "name" "Your full name (or GitHub handle) for git commits" | quote }}
     email = {{ promptStringOnce . "email" "Your email for git commits" | quote }}
+    # Absolute project root for NTM. Existing per-machine values are preserved.
+    projects_dir = {{ index . "projects_dir" | default $projectsDir | quote }}
     # Directory prefixes for git identity auto-switching (used by
     # ~/.config/git/config's [includeIf] blocks). Edit chezmoi.toml + run
     # `chezmoi apply` if your code lives somewhere else on a given machine.
-    git_dir_personal = "~/github/personal/"
-    git_dir_work     = "~/github/work/"
+    git_dir_personal = {{ index . "git_dir_personal" | default "~/code/personal/" | quote }}
+    git_dir_work     = {{ index . "git_dir_work" | default "~/code/work/" | quote }}
     # Default theme on Mac — edit chezmoi.toml later to switch.
     # On Linux, omarchy manages theme switching dynamically and these are
     # ignored by the relevant templates.

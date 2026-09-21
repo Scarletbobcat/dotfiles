@@ -1,4 +1,4 @@
-# Loaded by ~/.config/git/config via [includeIf "gitdir:~/github/personal/"]
+# Loaded by ~/.config/git/config for the configured personal-repository prefix.
 [user]
 	name = Scarletbobcat
 	email = tien.hoang314@yahoo.com

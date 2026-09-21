@@ -14,7 +14,7 @@ Works the same on macOS (Apple Silicon) and Omarchy/Arch Linux.
 dot_config/              Mirrors ~/.config/. Subdirectories below.
 ├── ghostty/             Terminal emulator
 ├── git/                 Templated. Identity from chezmoi.toml + [includeIf]
-│                        rules for ~/github/personal/ vs ~/github/work/.
+│                        rules for ~/code/personal/ vs ~/code/work/.
 ├── ntm/                 Named Tmux Manager config (templated)
 ├── nvim/                LazyVim setup
 ├── starship.toml        Prompt config (Omarchy default — Everforest)
@@ -39,16 +39,20 @@ in `.tmpl` are run through Go's text/template at apply time.
 
 ## Bootstrap a fresh machine
 
-The repo can live anywhere — `~/github/personal/dotfiles` is just my
+The repo can live anywhere — `~/code/personal/dotfiles` is just my
 convention. Substitute whatever path you cloned to in the commands below;
 the install scripts and `chezmoi init` will work from any location.
 
 ### macOS
 
+Run the installer first, then apply the dotfiles with chezmoi. `chezmoi apply`
+manages configuration files; it does not run `scripts/install-mac.sh` or install
+the packages in the Brewfile automatically.
+
 ```sh
 # Clone the repo wherever you want
-git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
-cd ~/github/personal/dotfiles
+git clone https://github.com/Scarletbobcat/dotfiles ~/code/personal/dotfiles
+cd ~/code/personal/dotfiles
 
 # Install Homebrew if missing and Brewfile packages (including VS Code and Codex).
 # Install Node.js + npm via mise, Claude Code via npm, plus br and am.
@@ -86,8 +90,8 @@ before chezmoi applies the shell configuration.
 ### Omarchy / Arch
 
 ```sh
-git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
-cd ~/github/personal/dotfiles
+git clone https://github.com/Scarletbobcat/dotfiles ~/code/personal/dotfiles
+cd ~/code/personal/dotfiles
 ./scripts/install-omarchy.sh
 chezmoi init --apply -S "$(pwd)" \
     https://github.com/Scarletbobcat/dotfiles.git
@@ -175,19 +179,27 @@ in this repo**. The init step generates it from `.chezmoi.toml.tmpl`. Looks
 like:
 
 ```toml
-sourceDir = "/Users/tienhoang/github/personal/dotfiles"  # whatever you passed to -S
+sourceDir = "/Users/tienhoang/code/personal/dotfiles"  # whatever you passed to -S
 
 [data]
     name             = "tienhoang-k2vp"        # work identity (Mac default)
     email            = "tien@k2vp.com"
-    git_dir_personal = "~/github/personal/"    # gitdir prefix for personal identity
-    git_dir_work     = "~/github/work/"        # gitdir prefix for work identity
+    projects_dir     = "/Users/tienhoang/code" # absolute project root for NTM
+    git_dir_personal = "~/code/personal/"      # gitdir prefix for personal identity
+    git_dir_work     = "~/code/work/"          # gitdir prefix for work identity
     theme_ghostty    = "Everforest Dark Hard"  # Mac theme (Linux uses omarchy)
     theme_nvim       = "everforest"
     theme_nvim_bg    = "soft"
 ```
 
 Edit this file and `chezmoi apply` to change identity or theme on Mac.
+
+New machines default to `~/code`. Existing Git directory settings are preserved
+by `chezmoi init`; older configurations with `~/github/personal/` also keep NTM
+pointing at `~/github` unless `projects_dir` is explicitly changed. Updating this
+repo does not move any repositories. When migrating a machine, update
+`projects_dir`, `git_dir_personal`, and `git_dir_work` in its chezmoi config, plus
+`sourceDir` if the dotfiles checkout moves, before applying.
 
 ## Git identity routing
 
@@ -196,8 +208,8 @@ Git identity auto-switches based on what directory you're in:
 | Path | Identity |
 |------|----------|
 | Anywhere not matching below | `chezmoi.toml` defaults (`name` / `email` from prompts) |
-| Under `git_dir_personal` (default `~/github/personal/`) | personal (Scarletbobcat / yahoo email) |
-| Under `git_dir_work` (default `~/github/work/`) | work (tienhoang-k2vp / k2vp email) |
+| Under `git_dir_personal` (default `~/code/personal/`) | personal (Scarletbobcat / yahoo email) |
+| Under `git_dir_work` (default `~/code/work/`) | work (tienhoang-k2vp / k2vp email) |
 
 This is `[includeIf "gitdir:..."]` in `~/.config/git/config`, with the
 prefixes templated from the `git_dir_personal` and `git_dir_work` chezmoi

@@ -1,4 +1,4 @@
-# Loaded by ~/.config/git/config via [includeIf "gitdir:~/github/work/"]
+# Loaded by ~/.config/git/config for the configured work-repository prefix.
 [user]
 	name = tienhoang-k2vp
 	email = tien@k2vp.com

@@ -2,11 +2,16 @@
 # NTM (Named Tmux Manager) Configuration
 # https://github.com/Dicklesworthstone/ntm
 #
-# NOTE: chezmoi delimiters are swapped to [[ ]] for this file because
+# NOTE: chezmoi uses alternate delimiters in this file because
 # NTM's [agents] section uses {{...}} for its own command templates.
 
-# Base directory for projects (templated for cross-platform $HOME)
-projects_base = "<% .chezmoi.homeDir %>/github"
+# Base directory for projects (set projects_dir in chezmoi.toml to override).
+# Preserve older configs that do not have projects_dir yet.
+<% $projectsDir := printf "%s/code" .chezmoi.homeDir -%>
+<% if eq (index . "git_dir_personal") "~/github/personal/" -%>
+<% $projectsDir = printf "%s/github" .chezmoi.homeDir -%>
+<% end -%>
+projects_base = <% index . "projects_dir" | default $projectsDir | quote %>
 
 # UI Theme (mocha, macchiato, nord, latte, auto)
 # theme = "auto"
@@ -759,4 +764,3 @@ Investigate the codebase to find potential issues:
 - Performance problems
 - Security concerns
 Report findings with specific file locations and line numbers."""
-
