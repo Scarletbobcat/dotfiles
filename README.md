@@ -51,7 +51,7 @@ git clone https://github.com/Scarletbobcat/dotfiles ~/github/personal/dotfiles
 cd ~/github/personal/dotfiles
 
 # Install Homebrew if missing and Brewfile packages (including VS Code and Codex).
-# Install Node.js + npm via mise, Claude Code via npm, plus beads and agent mail.
+# Install Node.js + npm via mise, Claude Code via npm, plus br and am.
 ./scripts/install-mac.sh
 
 # Initialize chezmoi against this repo (prompts for name + email, populates
@@ -67,6 +67,21 @@ instead of cloning a fresh copy into `~/.local/share/chezmoi/`. The path
 gets persisted into `~/.config/chezmoi/chezmoi.toml` (via
 `{{ .chezmoi.sourceDir }}` in the template), so subsequent `chezmoi`
 commands don't need `-S`.
+
+The Mac bootstrap includes these AI development tools and checks that each
+command is on PATH before reporting success:
+
+| Command | Tool | Installed through |
+|---------|------|-------------------|
+| `br` | Beads issue tracker | Upstream installer |
+| `bv` | Beads Viewer | Homebrew |
+| `ntm` | Named Tmux Manager | Homebrew |
+| `am` | MCP Agent Mail CLI | Upstream installer (also installs `mcp-agent-mail`) |
+| `ubs` | Ultimate Bug Scanner | Homebrew |
+
+The Brewfile also includes modern Bash, Python, ripgrep, ast-grep, git, and jq
+for UBS. The script adds `~/.local/bin` to its PATH so `br` and `am` are available
+before chezmoi applies the shell configuration.
 
 ### Omarchy / Arch
 

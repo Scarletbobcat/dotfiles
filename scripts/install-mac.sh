@@ -15,6 +15,8 @@ brew bundle --file="$(dirname "$0")/Brewfile"
 
 # Make brew binaries available in this script (Brewfile-installed mise needs to be on PATH)
 eval "$(/opt/homebrew/bin/brew shellenv)"
+# Upstream installers put br and am here; expose them before shell setup is applied.
+export PATH="$HOME/.local/bin:$PATH"
 
 echo
 echo "Installing Node.js and npm via mise..."
@@ -26,13 +28,22 @@ echo "Installing Claude Code via npm..."
 mise exec node@latest -- npm install -g @anthropic-ai/claude-code
 
 echo
-echo "Installing beads CLI + agent mail..."
+echo "Installing Beads (br) and Agent Mail (am); bv, ntm, and ubs come from Brewfile..."
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
 # agent mail's installer dumps project-local MCP configs (codex.mcp.json,
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
 # noise lands somewhere disposable; the home-level configs it also writes
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
 ( cd "$(mktemp -d)" && curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash )
+
+echo
+echo "Checking AI development tools (br, bv, ntm, am, ubs)..."
+for tool in br bv ntm am ubs; do
+  if ! command -v "$tool"; then
+    echo "ERROR: $tool is not on PATH after installation." >&2
+    exit 1
+  fi
+done
 
 DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 echo
