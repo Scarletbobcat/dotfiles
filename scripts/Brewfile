@@ -21,6 +21,9 @@ brew "zellij"
 
 # Networking / remote access
 brew "tailscale"     # headless daemon for Tailscale SSH (see scripts/setup-tailscale.sh)
+brew "cloudflared"
+cask "ngrok"
+cask "localsend"
 
 # Dev tooling
 brew "mise"
@@ -30,6 +33,39 @@ brew "chezmoi"        # dotfiles manager (this very repo)
 brew "jq"             # required by jackknife setup.sh
 brew "lazygit"
 brew "lazydocker"
+brew "just"
+brew "gum"
+brew "actionlint"
+brew "git-filter-repo"
+brew "mkcert"         # local HTTPS certs; run `mkcert -install` once after install
+brew "vite"
+
+# Languages and runtimes (Node and Python versions come from mise)
+brew "oven-sh/bun/bun"
+brew "uv"
+brew "openjdk@21"
+brew "maven"
+brew "php"
+
+# Cloud, infra, and service CLIs
+brew "awscli"
+brew "doctl"
+brew "render"
+brew "hashicorp/tap/terraform"
+brew "stripe/stripe-cli/stripe"
+brew "crane"
+brew "mongosh"
+cask "1password-cli"
+
+# Containers (Docker Desktop ships the docker and compose CLIs)
+cask "docker-desktop"
+
+# Media and data
+brew "homebrew-ffmpeg/ffmpeg/ffmpeg"
+brew "imagemagick"
+brew "handbrake"      # HandBrakeCLI
+brew "gdal"
+brew "humansignal/tap/label-studio"
 
 # Multi-agent workflow stack (jackknife-related)
 brew "dicklesworthstone/tap/ntm"
@@ -48,8 +84,40 @@ brew "neovim"
 # Terminal emulator
 cask "ghostty"
 
-# GUI editors
-cask "visual-studio-code"
+# Fonts
+cask "font-fira-code-nerd-font"
+cask "font-menlo-for-powerline"
 
-# AI coding assistants
+# GUI editors and dev apps
+cask "visual-studio-code"
+cask "tableplus"
+cask "figma"
+
+# VS Code extensions (installed after the visual-studio-code cask)
+vscode "ms-azuretools.vscode-containers"
+vscode "ms-python.debugpy"
+vscode "ms-python.python"
+vscode "ms-python.vscode-pylance"
+vscode "ms-python.vscode-python-envs"
+vscode "ms-vscode-remote.remote-containers"
+vscode "ms-vsliveshare.vsliveshare"
+vscode "redhat.vscode-xml"
+
+# AI coding assistants and apps
 cask "codex"          # CLI; Claude Code is installed via npm in install-mac.sh
+cask "claude"
+cask "chatgpt"
+
+# Everyday apps
+cask "1password"
+cask "google-chrome"
+cask "slack"
+cask "discord"
+cask "granola"
+cask "obsidian"
+cask "spotify"
+cask "rectangle"
+
+# Hardware drivers
+cask "displaylink"
+cask "logi-options+"

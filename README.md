@@ -54,8 +54,10 @@ the packages in the Brewfile automatically.
 git clone https://github.com/Scarletbobcat/dotfiles ~/code/personal/dotfiles
 cd ~/code/personal/dotfiles
 
-# Install Homebrew if missing and Brewfile packages (including VS Code and Codex).
-# Install Node.js + npm via mise, Claude Code via npm, plus br and am.
+# Install Homebrew if missing and Brewfile packages (CLIs, apps, fonts, and
+# VS Code extensions). Install Node.js + npm via mise, Claude Code and global
+# npm tools via npm, plus br, am, and the Basecamp CLI. Add user-scope MCP
+# servers to Claude Code.
 ./scripts/install-mac.sh
 
 # Initialize chezmoi against this repo (prompts for name + email, populates
@@ -82,10 +84,23 @@ command is on PATH before reporting success:
 | `ntm` | Named Tmux Manager | Homebrew |
 | `am` | MCP Agent Mail CLI | Upstream installer (also installs `mcp-agent-mail`) |
 | `ubs` | Ultimate Bug Scanner | Homebrew |
+| `claude` | Claude Code | npm (through mise) |
+| `basecamp` | Basecamp CLI | Upstream installer |
 
 The Brewfile also includes modern Bash, Python, ripgrep, ast-grep, git, and jq
 for UBS. The script adds `~/.local/bin` to its PATH so `br` and `am` are available
 before chezmoi applies the shell configuration.
+
+The script also adds these user-scope MCP servers to Claude Code: posthog,
+granola, and betterstack. Authorize them with `/mcp` inside Claude Code. It adds
+postmark only when its token is in the environment, so the token never lives in
+this repo:
+
+```sh
+POSTMARK_SERVER_TOKEN="$(op read 'op://<vault>/<item>/credential')" \
+DEFAULT_SENDER_EMAIL="you@example.com" \
+    ./scripts/install-mac.sh
+```
 
 ### Omarchy / Arch
 
