@@ -1,6 +1,9 @@
 # macOS package list — installed via `scripts/install-mac.sh`.
 # Run `brew bundle dump --file=scripts/Brewfile --force` to regenerate
 # from currently-installed packages.
+#
+# Formulae from third-party taps need `trusted: true`: Homebrew 7+ refuses to
+# load formulae from taps you have not trusted.
 
 # Shell: prompt, plugins, smart cd
 brew "starship"
@@ -41,7 +44,7 @@ brew "mkcert"         # local HTTPS certs; run `mkcert -install` once after inst
 brew "vite"
 
 # Languages and runtimes (Node and Python versions come from mise)
-brew "oven-sh/bun/bun"
+brew "oven-sh/bun/bun", trusted: true
 brew "uv"
 brew "openjdk@21"
 brew "maven"
@@ -51,8 +54,8 @@ brew "php"
 brew "awscli"
 brew "doctl"
 brew "render"
-brew "hashicorp/tap/terraform"
-brew "stripe/stripe-cli/stripe"
+brew "hashicorp/tap/terraform", trusted: true
+brew "stripe/stripe-cli/stripe", trusted: true
 brew "crane"
 brew "mongosh"
 cask "1password-cli"
@@ -61,16 +64,16 @@ cask "1password-cli"
 cask "docker-desktop"
 
 # Media and data
-brew "homebrew-ffmpeg/ffmpeg/ffmpeg"
+brew "homebrew-ffmpeg/ffmpeg/ffmpeg", trusted: true
 brew "imagemagick"
 brew "handbrake"      # HandBrakeCLI
 brew "gdal"
-brew "humansignal/tap/label-studio"
+brew "humansignal/tap/label-studio", trusted: true
 
 # Multi-agent workflow stack (jackknife-related)
-brew "dicklesworthstone/tap/ntm"
-brew "dicklesworthstone/tap/bv"   # beads viewer (paired with `br`)
-brew "dicklesworthstone/tap/ubs"  # Ultimate Bug Scanner
+brew "dicklesworthstone/tap/ntm", trusted: true
+brew "dicklesworthstone/tap/bv", trusted: true   # beads viewer (paired with `br`)
+brew "dicklesworthstone/tap/ubs", trusted: true  # Ultimate Bug Scanner
 
 # UBS runtime and scanning dependencies (git and jq are listed above)
 brew "bash"           # UBS requires Bash 4+; macOS ships Bash 3.2
