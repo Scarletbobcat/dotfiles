@@ -70,12 +70,8 @@ brew "handbrake"      # HandBrakeCLI
 brew "gdal"
 brew "humansignal/tap/label-studio", trusted: true
 
-# Multi-agent workflow stack (jackknife-related)
-brew "dicklesworthstone/tap/ntm", trusted: true
-brew "dicklesworthstone/tap/bv", trusted: true   # beads viewer (paired with `br`)
-brew "dicklesworthstone/tap/ubs", trusted: true  # Ultimate Bug Scanner
-
-# UBS runtime and scanning dependencies (git and jq are listed above)
+# UBS runtime and scanning dependencies (git and jq are listed above).
+# br, bv, ntm, ubs, and am come from their official installers in install-mac.sh.
 brew "bash"           # UBS requires Bash 4+; macOS ships Bash 3.2
 brew "python"         # scanner helpers
 brew "ripgrep"

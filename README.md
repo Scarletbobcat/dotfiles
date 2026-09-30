@@ -80,15 +80,20 @@ command is on PATH before reporting success:
 | Command | Tool | Installed through |
 |---------|------|-------------------|
 | `br` | Beads issue tracker | Upstream installer |
-| `bv` | Beads Viewer | Homebrew |
-| `ntm` | Named Tmux Manager | Homebrew |
+| `bv` | Beads Viewer | Upstream installer (pinned commit, per its README) |
+| `ntm` | Named Tmux Manager | Upstream installer |
 | `am` | MCP Agent Mail CLI | Upstream installer (also installs `mcp-agent-mail`) |
-| `ubs` | Ultimate Bug Scanner | Homebrew |
+| `ubs` | Ultimate Bug Scanner | Upstream installer |
 | `claude` | Claude Code | npm (through mise) |
 | `basecamp` | Basecamp CLI | Upstream installer |
 
+Every upstream installer comes from the project's own GitHub repository, uses
+the URL its README documents, and installs into `~/.local/bin`. The script
+removes Homebrew copies of `ntm`, `bv`, and `ubs` left by earlier versions of
+this setup, so each tool has one copy on PATH, and warns if it finds duplicates.
+
 The Brewfile also includes modern Bash, Python, ripgrep, ast-grep, git, and jq
-for UBS. The script adds `~/.local/bin` to its PATH so `br` and `am` are available
+for UBS. The script adds `~/.local/bin` to its PATH so these tools are available
 before chezmoi applies the shell configuration.
 
 The script also adds these user-scope MCP servers to Claude Code: posthog,

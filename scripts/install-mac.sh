@@ -90,6 +90,28 @@ brew_bundle_with_progress() {
   return "$status"
 }
 
+# Download an upstream installer to a temp file, then run it with any extra
+# arguments. Piping curl straight into bash fails under pipefail when an
+# installer exits before curl finishes sending it. Installers get no stdin,
+# as when piped, so they take their non-interactive defaults.
+run_installer() {
+  local url=$1 tmp status=0
+  shift
+  tmp=$(mktemp)
+  if ! curl -fsSL "$url?$(date +%s)" -o "$tmp"; then
+    echo "ERROR: couldn't download installer: $url" >&2
+    rm -f "$tmp"
+    return 1
+  fi
+  bash "$tmp" "$@" </dev/null || status=$?
+  rm -f "$tmp"
+  # 141 is SIGPIPE from an installer's own early exit (e.g. already up to date).
+  if ((status != 0 && status != 141)); then
+    echo "ERROR: installer failed with exit code $status: $url" >&2
+    return "$status"
+  fi
+}
+
 # Several casks run installers that need an admin password. Ask once up front
 # and keep the sudo timestamp fresh, so no prompt appears under the progress bar.
 ensure_sudo() {
@@ -123,7 +145,8 @@ brew_bundle_with_progress "$SCRIPT_DIR/Brewfile"
 
 # Make brew binaries available in this script (Brewfile-installed mise needs to be on PATH)
 eval "$(/opt/homebrew/bin/brew shellenv)"
-# Upstream installers put br, am, and basecamp here; expose them before shell setup is applied.
+# Upstream installers put br, bv, ntm, am, ubs, and basecamp here; expose them
+# before shell setup is applied.
 export PATH="$HOME/.local/bin:$PATH"
 
 step "Installing Node.js and npm via mise"
@@ -146,17 +169,38 @@ mise exec node@latest -- npm install -g \
   pyright \
   yarn
 
-step "Installing Beads (br) and Agent Mail (am); bv, ntm, and ubs come from Brewfile"
-curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
+step "Installing br, bv, ntm, ubs, and am from their official installers"
+# Every tool lands in ~/.local/bin, so each has exactly one copy on PATH.
+LOCAL_BIN="$HOME/.local/bin"
+mkdir -p "$LOCAL_BIN"
+# Earlier versions of this Brewfile installed ntm, bv, and ubs with Homebrew.
+# Remove those copies; otherwise they shadow the ones in ~/.local/bin.
+for formula in ntm bv ubs; do
+  if brew list --formula "dicklesworthstone/tap/$formula" &>/dev/null; then
+    echo "Removing the Homebrew copy of $formula..."
+    brew uninstall --formula "dicklesworthstone/tap/$formula"
+  fi
+done
+# Installer URLs are the ones each project's README documents. bv's README
+# pins its installer to a reviewed commit instead of main.
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh"
+INSTALL_DIR="$LOCAL_BIN" run_installer \
+  "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/a43b8e85a39664381566abdfd85dc8fcbfdcb773/install.sh"
+# The managed .zshrc already sets up NTM's shell integration.
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh" \
+  --dir="$LOCAL_BIN" --no-shell
+# The managed .zshrc already puts ~/.local/bin on PATH.
+run_installer "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/main/install.sh" \
+  --install-dir "$LOCAL_BIN" --non-interactive --no-path-modify --skip-hooks
 # agent mail's installer dumps project-local MCP configs (codex.mcp.json,
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
 # noise lands somewhere disposable; the home-level configs it also writes
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
-( cd "$(mktemp -d)" && curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash )
+( cd "$(mktemp -d)" && run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh" )
 
 step "Installing the Basecamp CLI"
 if ! command -v basecamp &>/dev/null; then
-  curl -fsSL https://basecamp.com/install-cli | bash
+  run_installer "https://raw.githubusercontent.com/basecamp/basecamp-cli/main/scripts/install.sh"
 else
   echo "Basecamp CLI is already installed."
 fi
@@ -168,6 +212,14 @@ for tool in br bv ntm am ubs claude basecamp; do
   else
     echo "ERROR: $tool is not on PATH after installation." >&2
     exit 1
+  fi
+done
+# The installer-managed tools should each have exactly one copy, in ~/.local/bin.
+for tool in br bv ntm am ubs; do
+  copies=$(type -a -p "$tool" | sort -u)
+  if (($(echo "$copies" | wc -l) > 1)); then
+    echo "  WARNING: $tool is installed in more than one place. Keep $LOCAL_BIN/$tool and remove the others:"
+    while IFS= read -r copy; do printf '    %s\n' "$copy"; done <<<"$copies"
   fi
 done
 
