@@ -95,10 +95,13 @@ brew_bundle_with_progress() {
 # installer exits before curl finishes sending it. Installers get no stdin,
 # as when piped, so they take their non-interactive defaults.
 run_installer() {
-  local url=$1 tmp status=0
+  local url=$1 fetch_url=$1 tmp status=0
   shift
+  # Bust GitHub's raw-file cache so we get the current installer. Other hosts
+  # (claude.ai) reject the query string.
+  [[ $url == https://raw.githubusercontent.com/* ]] && fetch_url="$url?$(date +%s)"
   tmp=$(mktemp)
-  if ! curl -fsSL "$url?$(date +%s)" -o "$tmp"; then
+  if ! curl -fsSL "$fetch_url" -o "$tmp"; then
     echo "ERROR: couldn't download installer: $url" >&2
     rm -f "$tmp"
     return 1
@@ -145,29 +148,27 @@ brew_bundle_with_progress "$SCRIPT_DIR/Brewfile"
 
 # Make brew binaries available in this script (Brewfile-installed mise needs to be on PATH)
 eval "$(/opt/homebrew/bin/brew shellenv)"
-# Upstream installers put br, bv, ntm, am, ubs, and basecamp here; expose them
-# before shell setup is applied.
+# Upstream installers put claude, br, bv, ntm, am, ubs, and basecamp here; expose
+# them before shell setup is applied.
 export PATH="$HOME/.local/bin:$PATH"
 
-step "Installing Node.js and npm via mise"
+step "Installing Node.js via mise"
 mise use -g node@latest
-# Expose npm global binaries (claude and the tools below) to the rest of this script.
-NODE_BIN="$(mise where node@latest)/bin"
-export PATH="$NODE_BIN:$PATH"
 
-step "Installing Claude Code via npm"
-# Run through mise so Node and npm are available before shell setup is applied.
-mise exec node@latest -- npm install -g @anthropic-ai/claude-code
+step "Installing Claude Code with its native installer"
+# The native build doesn't depend on Node, so claude works in every repo,
+# including ones that pin their own Node version with mise.
+run_installer "https://claude.ai/install.sh"
 
-step "Installing global npm tools"
-mise exec node@latest -- npm install -g \
-  @shopify/cli \
-  agent-browser \
-  typescript \
-  ts-node \
-  typescript-language-server \
-  pyright \
-  yarn
+step "Installing global npm tools through mise"
+# mise's npm backend keeps each tool available whichever Node version a repo
+# pins. `npm install -g` would tie them to one Node version and hide them there.
+NPM_TOOLS=(@shopify/cli agent-browser typescript ts-node typescript-language-server pyright yarn)
+mise use -g "${NPM_TOOLS[@]/#/npm:}"
+# Earlier versions of this script installed these and Claude Code with
+# `npm install -g` into mise's Node. Remove those copies so each has one install.
+mise exec node@latest -- npm uninstall -g @anthropic-ai/claude-code "${NPM_TOOLS[@]}" >/dev/null 2>&1 || true
+mise reshim
 
 step "Installing br, bv, ntm, ubs, and am from their official installers"
 # Every tool lands in ~/.local/bin, so each has exactly one copy on PATH.
@@ -220,8 +221,16 @@ for tool in br bv ntm am ubs claude basecamp; do
     exit 1
   fi
 done
+for tool in pyright typescript-language-server agent-browser shopify yarn; do
+  if tool_path=$(mise which "$tool" 2>/dev/null); then
+    printf '  %s✓%s %-9s %s\n' "$GREEN" "$RESET" "$tool" "$tool_path"
+  else
+    echo "ERROR: mise can't find $tool after installation." >&2
+    exit 1
+  fi
+done
 # The installer-managed tools should each have exactly one copy, in ~/.local/bin.
-for tool in br bv ntm am ubs; do
+for tool in br bv ntm am ubs claude; do
   copies=$(type -a -p "$tool" | sort -u)
   if (($(echo "$copies" | wc -l) > 1)); then
     echo "  WARNING: $tool is installed in more than one place. Keep $LOCAL_BIN/$tool and remove the others:"
@@ -265,9 +274,9 @@ echo "  1. Initialize chezmoi against this repo (replace the path if you cloned"
 echo "     somewhere other than $DOTFILES_DIR):"
 echo "       chezmoi init --apply -S \"$DOTFILES_DIR\" \\"
 echo "         https://github.com/Scarletbobcat/dotfiles.git"
-echo "     Keep the default ~/code/personal/ and ~/code/work/ layout. If your work"
-echo "     repos live in ~/code/work/, set projects_dir to that path in"
-echo "     ~/.config/chezmoi/chezmoi.toml so NTM finds them."
+echo "     Enter your work name and email when prompted. Clone work repos into"
+echo "     ~/code/<repo> (default identity; NTM looks in ~/code) and personal ones"
+echo "     into ~/code/personal/<repo> (switches to the personal identity)."
 echo "     On subsequent re-runs you can just use: chezmoi apply"
 echo "  2. Restart your terminal (or run 'exec zsh') to pick up the new shell setup"
 echo "  3. Log in: 'gh auth login' (once per GitHub account), claude, codex,"

@@ -103,7 +103,7 @@ vscode "ms-vsliveshare.vsliveshare"
 vscode "redhat.vscode-xml"
 
 # AI coding assistants and apps
-cask "codex"          # CLI; Claude Code is installed via npm in install-mac.sh
+cask "codex"          # CLI; Claude Code uses its native installer in install-mac.sh
 cask "claude"
 cask "chatgpt"
 

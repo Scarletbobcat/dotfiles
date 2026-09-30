@@ -14,7 +14,8 @@ Works the same on macOS (Apple Silicon) and Omarchy/Arch Linux.
 dot_config/              Mirrors ~/.config/. Subdirectories below.
 ├── ghostty/             Terminal emulator
 ├── git/                 Templated. Identity from chezmoi.toml + [includeIf]
-│                        rules for ~/code/personal/ vs ~/code/work/.
+│                        rules for ~/code/personal/ (work repos sit
+│                        directly in ~/code/ and use the default identity).
 ├── ntm/                 Named Tmux Manager config (templated)
 ├── nvim/                LazyVim setup
 ├── starship.toml        Prompt config (Omarchy default — Everforest)
@@ -55,9 +56,9 @@ git clone https://github.com/Scarletbobcat/dotfiles ~/code/personal/dotfiles
 cd ~/code/personal/dotfiles
 
 # Install Homebrew if missing and Brewfile packages (CLIs, apps, fonts, and
-# VS Code extensions). Install Node.js + npm via mise, Claude Code and global
-# npm tools via npm, plus br, am, and the Basecamp CLI. Add user-scope MCP
-# servers to Claude Code.
+# VS Code extensions). Install Node.js via mise, Claude Code with its native
+# installer, global npm tools through mise, plus br, bv, ntm, ubs, am, and the
+# Basecamp CLI. Add user-scope MCP servers to Claude Code.
 ./scripts/install-mac.sh
 
 # Initialize chezmoi against this repo (prompts for name + email, populates
@@ -84,13 +85,22 @@ command is on PATH before reporting success:
 | `ntm` | Named Tmux Manager | Upstream installer |
 | `am` | MCP Agent Mail CLI | Upstream installer (also installs `mcp-agent-mail`) |
 | `ubs` | Ultimate Bug Scanner | Upstream installer |
-| `claude` | Claude Code | npm (through mise) |
+| `claude` | Claude Code | Native installer (`claude.ai/install.sh`) |
 | `basecamp` | Basecamp CLI | Upstream installer |
 
-Every upstream installer comes from the project's own GitHub repository, uses
-the URL its README documents, and installs into `~/.local/bin`. The script
-removes Homebrew copies of `ntm`, `bv`, and `ubs` left by earlier versions of
-this setup, so each tool has one copy on PATH, and warns if it finds duplicates.
+Every upstream installer comes from the project's own source (its GitHub
+repository, or claude.ai for Claude Code), uses the URL its README documents,
+and installs into `~/.local/bin`. The script removes Homebrew copies of `ntm`,
+`bv`, and `ubs` left by earlier versions of this setup, so each tool has one copy
+on PATH, and warns if it finds duplicates.
+
+Global npm CLIs (`pyright`, `typescript-language-server`, `typescript`,
+`ts-node`, `agent-browser`, the Shopify CLI, and `yarn`) install through mise's
+npm backend (`mise use -g npm:<package>`). That keeps them, and Claude Code's
+native build, working inside repos that pin their own Node version with mise;
+`npm install -g` ties a tool to one Node version, so it disappears in those
+repos with `mise ERROR No version is set for shim`. Re-running the script removes
+`npm -g` copies left by earlier versions.
 
 The Brewfile also includes modern Bash, Python, ripgrep, ast-grep, git, and jq
 for UBS. The script adds `~/.local/bin` to its PATH so these tools are available
@@ -206,7 +216,8 @@ sourceDir = "/Users/tienhoang/code/personal/dotfiles"  # whatever you passed to 
     email            = "tien@k2vp.com"
     projects_dir     = "/Users/tienhoang/code" # absolute project root for NTM
     git_dir_personal = "~/code/personal/"      # gitdir prefix for personal identity
-    git_dir_work     = "~/code/work/"          # gitdir prefix for work identity
+    git_dir_work     = "~/code/work/"          # gitdir prefix for work identity (unused
+                                               # when work repos sit directly in ~/code)
     theme_ghostty    = "Everforest Dark Hard"  # Mac theme (Linux uses omarchy)
     theme_nvim       = "everforest"
     theme_nvim_bg    = "soft"
@@ -230,6 +241,11 @@ Git identity auto-switches based on what directory you're in:
 | Anywhere not matching below | `chezmoi.toml` defaults (`name` / `email` from prompts) |
 | Under `git_dir_personal` (default `~/code/personal/`) | personal (Scarletbobcat / yahoo email) |
 | Under `git_dir_work` (default `~/code/work/`) | work (tienhoang-k2vp / k2vp email) |
+
+On the Mac, work repos sit directly in `~/code/<repo>` and personal repos in
+`~/code/personal/<repo>`. Work repos get the work identity as the default, NTM
+finds them through `projects_dir` (default `~/code`), and the `git_dir_work`
+rule simply never matches.
 
 This is `[includeIf "gitdir:..."]` in `~/.config/git/config`, with the
 prefixes templated from the `git_dir_personal` and `git_dir_work` chezmoi
