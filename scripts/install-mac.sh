@@ -4,37 +4,139 @@
 #
 # Optional: set POSTMARK_SERVER_TOKEN and DEFAULT_SENDER_EMAIL (e.g. from
 # `op read`) to also add the Postmark MCP server to Claude Code.
+#
+# Keep this Bash 3.2 compatible: a fresh Mac runs it with /bin/bash.
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# ---------------------------------------------------------------------------
+# Progress output. Colors and the live bar only when stdout is a terminal.
+# ---------------------------------------------------------------------------
+if [[ -t 1 ]]; then
+  BLUE=$'\033[1;34m' GREEN=$'\033[1;32m' DIM=$'\033[2m' RESET=$'\033[0m'
+else
+  BLUE='' GREEN='' DIM='' RESET=''
+fi
+TOTAL_STEPS=$(grep -c '^step ' "$0")
+STEP=0
+STEP_START=$SECONDS
+
+format_duration() { printf '%dm %02ds' $(($1 / 60)) $(($1 % 60)); }
+
+print_step_time() {
+  printf '%s    done in %s%s\n' "$DIM" "$(format_duration $((SECONDS - STEP_START)))" "$RESET"
+}
+
+# Print "==> [3/9] <title>" and the time the previous step took.
+step() {
+  if ((STEP > 0)); then print_step_time; fi
+  STEP=$((STEP + 1))
+  STEP_START=$SECONDS
+  printf '\n%s==> [%d/%d] %s%s\n' "$BLUE" "$STEP" "$TOTAL_STEPS" "$1" "$RESET"
+}
+
+# Redraw "[█████░░░░░] 12/82  Installing ghostty" in place on one line.
+draw_bar() {
+  local current=$1 total=$2 label=$3 cols=$4 width=30 filled bar_on bar_off max_label
+  filled=$((current * width / total))
+  printf -v bar_on '%*s' "$filled" ''
+  printf -v bar_off '%*s' "$((width - filled))" ''
+  max_label=$((cols - width - 14))
+  if ((max_label < 10)); then max_label=10; fi
+  printf '\r\033[K%s[%s%s]%s %d/%d  %s' "$GREEN" "${bar_on// /█}" "${bar_off// /░}" "$RESET" \
+    "$current" "$total" "${label:0:max_label}"
+}
+
+# Run `brew bundle` with a live progress bar. brew prints one "Using x" or
+# "Installing x" line per Brewfile entry, so count those against the total.
+brew_bundle_with_progress() {
+  local brewfile=$1 total cols count=0 line status=0
+  if [[ ! -t 1 ]]; then
+    brew bundle --file="$brewfile"
+    return
+  fi
+  total=$(brew bundle list --file="$brewfile" --all 2>/dev/null | wc -l | tr -d ' ') || total=0
+  if ((total == 0)); then
+    brew bundle --file="$brewfile"
+    return
+  fi
+  cols=$(tput cols 2>/dev/null || echo 80)
+  brew bundle --file="$brewfile" 2>&1 | {
+    while IFS= read -r line; do
+      case "$line" in
+        *" has failed!")
+          # brew repeats the entry name on failure; print it, don't count it twice.
+          printf '\r\033[K%s\n' "$line"
+          draw_bar "$count" "$total" "" "$cols"
+          ;;
+        "Using "* | "Installing "* | "Upgrading "* | "Skipping "*)
+          count=$((count + 1))
+          draw_bar "$count" "$total" "$line" "$cols"
+          ;;
+        *)
+          # Errors, warnings, and the final summary print above the bar.
+          printf '\r\033[K%s\n' "$line"
+          if ((count > 0)); then draw_bar "$count" "$total" "" "$cols"; fi
+          ;;
+      esac
+    done
+    printf '\n'
+  } || status=$?
+  if ((status != 0)); then
+    echo "The Brewfile step failed. Fix the errors above, then re-run this script." >&2
+  fi
+  return "$status"
+}
+
+# Several casks run installers that need an admin password. Ask once up front
+# and keep the sudo timestamp fresh, so no prompt appears under the progress bar.
+ensure_sudo() {
+  if ! sudo -n true 2>/dev/null; then
+    echo "Some apps need your password to install. Enter it once now:"
+    sudo -v
+  fi
+}
+ensure_sudo
+while true; do
+  sudo -n true 2>/dev/null || true
+  sleep 50
+  kill -0 "$$" 2>/dev/null || exit
+done &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
+
+step "Checking Homebrew"
 if ! command -v brew &>/dev/null; then
   echo "Homebrew not installed. Installing..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   eval "$(/opt/homebrew/bin/brew shellenv)"
+  # Homebrew's installer clears the sudo timestamp when it exits.
+  ensure_sudo
+else
+  echo "Homebrew is already installed."
 fi
 
-echo "Installing packages from Brewfile..."
-brew bundle --file="$(dirname "$0")/Brewfile"
+step "Installing packages from Brewfile (the long one)"
+brew_bundle_with_progress "$SCRIPT_DIR/Brewfile"
 
 # Make brew binaries available in this script (Brewfile-installed mise needs to be on PATH)
 eval "$(/opt/homebrew/bin/brew shellenv)"
 # Upstream installers put br, am, and basecamp here; expose them before shell setup is applied.
 export PATH="$HOME/.local/bin:$PATH"
 
-echo
-echo "Installing Node.js and npm via mise..."
+step "Installing Node.js and npm via mise"
 mise use -g node@latest
 # Expose npm global binaries (claude and the tools below) to the rest of this script.
 NODE_BIN="$(mise where node@latest)/bin"
 export PATH="$NODE_BIN:$PATH"
 
-echo
-echo "Installing Claude Code via npm..."
+step "Installing Claude Code via npm"
 # Run through mise so Node and npm are available before shell setup is applied.
 mise exec node@latest -- npm install -g @anthropic-ai/claude-code
 
-echo
-echo "Installing global npm tools..."
+step "Installing global npm tools"
 mise exec node@latest -- npm install -g \
   @shopify/cli \
   agent-browser \
@@ -44,8 +146,7 @@ mise exec node@latest -- npm install -g \
   pyright \
   yarn
 
-echo
-echo "Installing Beads (br) and Agent Mail (am); bv, ntm, and ubs come from Brewfile..."
+step "Installing Beads (br) and Agent Mail (am); bv, ntm, and ubs come from Brewfile"
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh?$(date +%s)" | bash
 # agent mail's installer dumps project-local MCP configs (codex.mcp.json,
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
@@ -53,23 +154,24 @@ curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
 ( cd "$(mktemp -d)" && curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh?$(date +%s)" | bash )
 
-echo
-echo "Installing the Basecamp CLI..."
+step "Installing the Basecamp CLI"
 if ! command -v basecamp &>/dev/null; then
   curl -fsSL https://basecamp.com/install-cli | bash
+else
+  echo "Basecamp CLI is already installed."
 fi
 
-echo
-echo "Checking installed tools (br, bv, ntm, am, ubs, claude, basecamp)..."
+step "Checking installed tools"
 for tool in br bv ntm am ubs claude basecamp; do
-  if ! command -v "$tool"; then
+  if tool_path=$(command -v "$tool"); then
+    printf '  %s✓%s %-9s %s\n' "$GREEN" "$RESET" "$tool" "$tool_path"
+  else
     echo "ERROR: $tool is not on PATH after installation." >&2
     exit 1
   fi
 done
 
-echo
-echo "Adding user-scope MCP servers to Claude Code..."
+step "Adding user-scope MCP servers to Claude Code"
 # Skip servers that are already configured so re-runs don't fail.
 has_mcp() { jq -e --arg name "$1" '.mcpServers[$name]' "$HOME/.claude.json" &>/dev/null; }
 for server in \
@@ -77,10 +179,14 @@ for server in \
   "granola https://mcp.granola.ai/mcp" \
   "betterstack https://mcp.betterstack.com"; do
   read -r name url <<<"$server"
-  has_mcp "$name" || claude mcp add --scope user --transport http "$name" "$url"
+  if has_mcp "$name"; then
+    echo "  $name: already configured"
+  else
+    claude mcp add --scope user --transport http "$name" "$url"
+  fi
 done
 if has_mcp postmark; then
-  :
+  echo "  postmark: already configured"
 elif [[ -n "${POSTMARK_SERVER_TOKEN:-}" && -n "${DEFAULT_SENDER_EMAIL:-}" ]]; then
   claude mcp add --scope user postmark \
     -e POSTMARK_SERVER_TOKEN="$POSTMARK_SERVER_TOKEN" \
@@ -88,12 +194,15 @@ elif [[ -n "${POSTMARK_SERVER_TOKEN:-}" && -n "${DEFAULT_SENDER_EMAIL:-}" ]]; th
     -e DEFAULT_MESSAGE_STREAM="${DEFAULT_MESSAGE_STREAM:-outbound}" \
     -- npx -y @activecampaign/postmark-mcp
 else
-  echo "Skipped the postmark MCP server: set POSTMARK_SERVER_TOKEN and DEFAULT_SENDER_EMAIL, then re-run."
+  echo "  postmark: skipped. Set POSTMARK_SERVER_TOKEN and DEFAULT_SENDER_EMAIL, then re-run."
 fi
 
-DOTFILES_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+print_step_time
+printf '\n%sAll %d steps finished in %s.%s\n' "$GREEN" "$TOTAL_STEPS" "$(format_duration "$SECONDS")" "$RESET"
+
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo
-echo "Done. Next steps:"
+echo "Next steps:"
 echo "  1. Initialize chezmoi against this repo (replace the path if you cloned"
 echo "     somewhere other than $DOTFILES_DIR):"
 echo "       chezmoi init --apply -S \"$DOTFILES_DIR\" \\"
