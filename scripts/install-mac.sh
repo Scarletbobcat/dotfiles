@@ -196,6 +196,12 @@ run_installer "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_
 # cursor.mcp.json, .vscode/, etc.) into $PWD. Run from a tempdir so that
 # noise lands somewhere disposable; the home-level configs it also writes
 # (~/.codex, ~/.cursor, etc.) are what actually register the MCP server.
+# `am setup` only detects Claude Code and Codex by their session-history
+# dirs, which don't exist until each tool has run once. The installer
+# separately treats the codex binary on PATH as a client it must configure,
+# so on a fresh machine it fails when `am setup` finds nothing. Create the
+# dirs (each tool makes them itself on first run) so detection succeeds.
+mkdir -p "$HOME/.claude/projects" "$HOME/.codex/sessions"
 ( cd "$(mktemp -d)" && run_installer "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail_rust/main/install.sh" )
 
 step "Installing the Basecamp CLI"
