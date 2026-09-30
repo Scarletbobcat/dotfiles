@@ -38,7 +38,6 @@ echo "Installing global npm tools..."
 mise exec node@latest -- npm install -g \
   @shopify/cli \
   agent-browser \
-  task-master-ai \
   typescript \
   ts-node \
   typescript-language-server \
